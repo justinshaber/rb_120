@@ -1,0 +1,13 @@
+welcome: "~Welcome to Rock-Paper-Scissors-Lizard-Spock~
+        \n~The first to win three games is the WORLD CHAMPION! Good luck!~
+        \n=>Choose one to begin:"
+game_prompt: "=>%{options}
+        \n\tor (r, p, s, l, sp)"
+win: "%{winner} won!"
+lose: "You lost...%{winner} won..."
+tie: "It's a tie!"
+invalid_choice: "That's not a valid choice."
+final_winner: "You win it all! You're the RPSLS champion of the world!"
+final_loser: "Womp womp...you lost the match..."
+ask_play_again: "Do you want to play again? ([y] - continue, [any other key] - quit)"
+goodbye: "Thanks for playing! Goodbye!"

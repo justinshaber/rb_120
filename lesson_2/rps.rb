@@ -1,8 +1,48 @@
+require 'yaml'
+
+module Promptable
+  MESSAGE = YAML.load_file('rps_messages.yml')
+
+  def prompt(message, options = nil)
+    if options
+      puts format(MESSAGE[message], options)
+    else
+      puts "=> #{MESSAGE[message]}"
+    end
+  end
+
+  def reset_display
+    system "clear"
+  end
+end
+
+module Scorable
+  attr_accessor :score
+
+  def score_point
+    self.score += 1
+  end
+
+  def reset_scores
+    human.score = 0
+    computer.score = 0
+  end
+
+  def display_score
+    puts "| SCOREBOARD |"
+    puts "#{human.name}: #{human.score}"
+    puts "#{computer.name}: #{computer.score}"
+    puts
+  end
+end
+
 class Player
+  include Promptable, Scorable
   attr_accessor :move, :name
 
   def initialize
     set_name
+    @score = 0
   end
 end
 
@@ -26,6 +66,7 @@ class Human < Player
       break if Move::VALUES.include?(choice)
       puts "Sorry, invalid choice."
     end
+    reset_display
     self.move = Move.new(choice)
   end
 end
@@ -82,12 +123,9 @@ class Rule
   end
 end
 
-def compare(move1, move2)
-  # not sure where "compare" goes yet
-end
-
 # Game Orchestration Engine
 class RPSGame
+  include Promptable, Scorable
   attr_accessor :human, :computer
 
   def initialize
@@ -96,11 +134,11 @@ class RPSGame
   end
 
   def display_welcome_message
-    puts "Welcome to Rock, Paper, Scissors!"
+    prompt('welcome')
   end
 
   def display_goodbye_message
-    puts "Thanks for playing Rock, Paper, Scissors! Goodbye!"
+    prompt('goodbye')
   end
 
   def display_moves
@@ -112,11 +150,13 @@ class RPSGame
 
   def display_winner
     if human.move > computer.move
-      puts "#{human.name} won!"
+      prompt('win', winner: human.name)
+      human.score_point
     elsif human.move < computer.move
-      puts "#{computer.name} won!"
+      prompt('lose', winner: computer.name)
+      computer.score_point
     else
-      puts "It's a tie!"
+      prompt('tie')
     end
   end
 
@@ -134,13 +174,25 @@ class RPSGame
     return true if answer == 'y'
   end
 
+  def display_final_result
+    human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
+  end
+
   def play
     display_welcome_message
     loop do
-      human.choose
-      computer.choose
-      display_moves
-      display_winner
+      loop do
+        human.choose
+        computer.choose
+        display_moves
+        display_winner
+        display_score
+        if human.score == 3 || computer.score == 3
+          display_final_result
+          reset_scores
+          break
+        end
+      end
       break unless play_again?
     end
     display_goodbye_message
