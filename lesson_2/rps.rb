@@ -1,4 +1,5 @@
 require 'yaml'
+require 'Pry'
 
 module Promptable
   MESSAGE = YAML.load_file('rps_messages.yml')
@@ -61,9 +62,9 @@ class Human < Player
   def choose
     choice = nil
     loop do
-      puts "Please choose rock, paper, or scissors:"
+      prompt('game_prompt', options: Move::VALUES.values.join(', '))
       choice = gets.chomp
-      break if Move::VALUES.include?(choice)
+      break if Move::VALUES.values.include?(choice)
       puts "Sorry, invalid choice."
     end
     reset_display
@@ -77,12 +78,27 @@ class Computer < Player
   end
 
   def choose
-    self.move = Move.new(Move::VALUES.sample)
+    self.move = Move.new(Move::VALUES.values.sample)
   end
 end
 
 class Move
-  VALUES = ['rock', 'paper', 'scissors']
+  attr_reader :value
+  VALUES = {
+    r: 'rock',
+    p: 'paper',
+    s: 'scissors',
+    l: 'lizard',
+    sp: 'spock'
+  }
+
+  WIN_OPTIONS = {
+    'rock' => ['lizard', 'scissors'],
+    'paper' => ['rock', 'spock'],
+    'scissors' => ['lizard', 'paper'],
+    'lizard' => ['paper', 'spock'],
+    'spock' => ['rock', 'scissors']
+  }
 
   def initialize(value)
     @value = value
@@ -149,10 +165,10 @@ class RPSGame
   end
 
   def display_winner
-    if human.move > computer.move
+    if Move::WIN_OPTIONS[human.move.to_s].include?(computer.move.to_s)
       prompt('win', winner: human.name)
       human.score_point
-    elsif human.move < computer.move
+    elsif Move::WIN_OPTIONS[computer.move.to_s].include?(human.move.to_s)
       prompt('lose', winner: computer.name)
       computer.score_point
     else
