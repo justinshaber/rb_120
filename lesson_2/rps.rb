@@ -63,13 +63,21 @@ class Human < Player
     choice = nil
     loop do
       prompt('game_prompt', options: Move::VALUES.values.join(', '))
-      choice = gets.chomp
-      break if Move::VALUES.values.include?(choice)
-      puts "Sorry, invalid choice."
+      choice = gets.chomp.downcase
+      break if valid_choice?(choice)
+      prompt('invalid_choice')
     end
     reset_display
+    choice = Move::VALUES[choice.to_sym] if choice.length <= 2
     self.move = Move.new(choice)
   end
+
+  def valid_choice?(choice)
+    Move::VALUES.key?(choice.to_sym) ||
+      Move::VALUES.value?(choice)
+  end
+
+
 end
 
 class Computer < Player
@@ -84,6 +92,7 @@ end
 
 class Move
   attr_reader :value
+
   VALUES = {
     r: 'rock',
     p: 'paper',
@@ -102,30 +111,13 @@ class Move
 
   def initialize(value)
     @value = value
-  end
-
-  def scissors?
-    @value == 'scissors'
-  end
-
-  def rock?
-    @value == 'rock'
-  end
-
-  def paper?
-    @value == 'paper'
-  end
-
-  def >(other_move)
-    rock? && other_move.scissors? ||
-      paper? && other_move.rock? ||
-      scissors? && other_move.paper?
-  end
-
-  def <(other_move)
-    rock? && other_move.paper? ||
-      paper? && other_move.scissors? ||
-      scissors? && other_move.rock?
+    # @value = case value
+    #          when 'rock'     then Rock.new
+    #          when 'paper'    then Paper.new
+    #          when 'scissors' then Scissors.new
+    #          when 'Lizard'   then Lizard.new
+    #          when 'Spock'    then Spock.new
+    #          end
   end
 
   def to_s
