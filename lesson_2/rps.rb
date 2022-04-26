@@ -1,7 +1,7 @@
 require 'yaml'
 require 'Pry'
 
-module Promptable
+module Displayable
   MESSAGE = YAML.load_file('rps_messages.yml')
 
   def prompt(message, options = nil)
@@ -14,6 +14,29 @@ module Promptable
 
   def reset_display
     system "clear"
+  end
+
+  def display_welcome_message
+    prompt('welcome')
+  end
+
+  def display_goodbye_message
+    prompt('goodbye')
+  end
+
+  def display_moves
+    puts ""
+    puts "#{human.name} chose #{human.move}."
+    puts "#{computer.name} chose #{computer.move}."
+    puts ""
+  end
+
+  def display_final_result
+    human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
+  end
+
+  def display_info
+    
   end
 end
 
@@ -38,7 +61,7 @@ module Scorable
 end
 
 class Player
-  include Promptable, Scorable
+  include Displayable, Scorable
   attr_accessor :move, :name
 
   def initialize
@@ -125,35 +148,14 @@ class Move
   end
 end
 
-class Rule
-  def initialize
-    # not sure what the "state" of a rule object should be
-  end
-end
-
 # Game Orchestration Engine
 class RPSGame
-  include Promptable, Scorable
+  include Displayable, Scorable
   attr_accessor :human, :computer
 
   def initialize
     @human = Human.new
     @computer = Computer.new()
-  end
-
-  def display_welcome_message
-    prompt('welcome')
-  end
-
-  def display_goodbye_message
-    prompt('goodbye')
-  end
-
-  def display_moves
-    puts ""
-    puts "#{human.name} chose #{human.move}."
-    puts "#{computer.name} chose #{computer.move}."
-    puts ""
   end
 
   def display_winner
@@ -166,24 +168,6 @@ class RPSGame
     else
       prompt('tie')
     end
-  end
-
-  def play_again?
-    answer = nil
-
-    loop do
-      puts "Would you like to play again? (y/n)"
-      answer = gets.chomp
-      break if ['y', 'n'].include?(answer.downcase)
-      puts "Sorry, must be y or n."
-    end
-
-    return false if answer == 'n'
-    return true if answer == 'y'
-  end
-
-  def display_final_result
-    human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
   end
 
   def play
@@ -204,6 +188,20 @@ class RPSGame
       break unless play_again?
     end
     display_goodbye_message
+  end
+
+  def play_again?
+    answer = nil
+
+    loop do
+      puts "Would you like to play again? (y/n)"
+      answer = gets.chomp
+      break if ['y', 'n'].include?(answer.downcase)
+      puts "Sorry, must be y or n."
+    end
+
+    return false if answer == 'n'
+    return true if answer == 'y'
   end
 end
 
