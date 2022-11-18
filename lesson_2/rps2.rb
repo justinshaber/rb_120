@@ -1,50 +1,91 @@
-class Player
-  attr_accessor :move, :name
+class Move
+  VALUES = ['rock', 'paper', 'scissors']
 
-  def initialize(player_type = :human)
-    @player_type = player_type
-    @move = nil
-    set_name
+  def initialize(value)
+    @value = value
   end
 
-  def set_name
-    if human?
-      n = ""
-      loop do
-        puts "What is your name?"
-        n = gets.chomp
-        break unless n.empty?
-        puts "Input a value"
-      end
-      self.name = n
-    else
-      self.name = ['R2D2', 'Hal', 'Sonny'].sample
+  def rock?
+    @value == 'rock'
+  end
+
+  def paper?
+    @value == 'paper'
+  end
+
+  def scissors?
+    @value == 'scissors'
+  end
+
+  def >(other_move)
+    if rock?
+      return true if other_move.scissors?
+      return false
+    elsif paper?
+      return true if other_move.rock?
+      return false
+    elsif scissors?
+      return true if other_move.scissors?
+      return false
     end
   end
 
-  def choose
-    if human?
-      choice = nil
-      loop do
-        puts "Choose rock, paper, scissors"
-        choice = gets.chomp
-        break if ['rock', 'paper', 'scissors'].include?(choice)
-      end
-      self.move = choice
-    else
-      self.move = ['rock', 'paper', 'scissors'].sample
+  def <(other_move)
+    if rock?
+      return true if other_move.paper?
+      return false
+    elsif paper?
+      return true if other_move.scissors?
+      return false
+    elsif scissors?
+      return true if other_move.rock?
+      return false
     end
   end
 
-  def human?
-    @player_type == :human
+  def to_s
+    @value
   end
 end
 
-class Move
+class Player
+  attr_accessor :move, :name
+
   def initialize
-    # seems like we need something to keep track
-    # of the choice... a move object can be "paper", "rock" or "scissors"
+    set_name
+  end
+end
+
+class Human < Player
+  def set_name
+    n = ""
+    loop do
+      puts "What is your name?"
+      n = gets.chomp
+      break unless n.empty?
+      puts "Input a value"
+    end
+    self.name = n
+  end
+
+  def choose
+    choice = nil
+    loop do
+      puts "Choose rock, paper, scissors"
+      choice = gets.chomp
+      break if Move::VALUES.include?(choice)
+    end
+    self.move = Move.new(choice)
+  end
+end
+
+class Computer < Player
+  def set_name
+    self.name = ['R2D2', 'Hal', 'Sonny'].sample
+  end
+
+  def choose
+    self.move = Move.new(Move::VALUES.sample)
   end
 end
 
@@ -63,8 +104,8 @@ class RPSGame
   attr_accessor :human, :computer
 
   def initialize
-    @human = Player.new
-    @computer = Player.new(:computer)
+    @human = Human.new
+    @computer = Computer.new
   end
 
   def display_welcome_message
@@ -79,19 +120,12 @@ class RPSGame
     puts "#{human.name} chose #{human.move}."
     puts "#{computer.name} chose #{computer.move}."
 
-    case human.move
-    when 'rock'
-      puts "tie" if computer.move == 'rock'
-      puts "winner!" if computer.move == 'scissors'
-      puts "you lost" if computer.move == 'paper'
-    when 'paper'
-      puts "tie" if computer.move == 'paper'
-      puts "winner!" if computer.move == 'rock'
-      puts "you lost" if computer.move == 'scissors'
-    when 'scissors'
-      puts "tie" if computer.move == 'scissors'
-      puts "winner!" if computer.move == 'paper'
-      puts "you lost" if computer.move == 'rock'
+    if human.move > computer.move
+      puts "#{human.name} won!"
+    elsif human.move < computer.move
+      puts "#{computer.name} won!"
+    else
+      puts "It's a tie!"
     end
   end
 
