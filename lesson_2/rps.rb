@@ -31,6 +31,21 @@ module Displayable
     puts ""
   end
 
+  def display_winner(winner)
+    case winner
+      when 'human'    then prompt('win', winner: human.name)
+      when 'computer' then prompt('lose', winner: computer.name)
+      when 'none'     then prompt('tie')
+    end
+  end
+
+  def display_score
+    puts "| SCOREBOARD |"
+    puts "#{human.name}: #{human.score}"
+    puts "#{computer.name}: #{computer.score}"
+    puts
+  end
+
   def display_final_result
     human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
   end
@@ -50,13 +65,6 @@ module Scorable
   def reset_scores
     human.score = 0
     computer.score = 0
-  end
-
-  def display_score
-    puts "| SCOREBOARD |"
-    puts "#{human.name}: #{human.score}"
-    puts "#{computer.name}: #{computer.score}"
-    puts
   end
 end
 
@@ -106,8 +114,6 @@ class Human < Player
     Move::VALUES.key?(choice.to_sym) ||
       Move::VALUES.value?(choice)
   end
-
-
 end
 
 class Computer < Player
@@ -200,22 +206,25 @@ end
 # Game Orchestration Engine
 class RPSGame
   include Displayable, Scorable
-  attr_accessor :human, :computer
+  attr_accessor :human, :computer, :winner
 
   def initialize
     @human = Human.new
     @computer = Computer.new()
   end
 
-  def display_winner
-    if human.move.beats(computer.move)
-      prompt('win', winner: human.name)
+  def decide_winner
+    human_move = human.move
+    computer_move = computer.move
+
+    if human_move.beats(computer_move)
+      self.winner = 'human'
       human.score_point
-    elsif computer.move.beats(human.move)
-      prompt('lose', winner: computer.name)
+    elsif computer_move.beats(human_move)
+      self.winner = 'computer'
       computer.score_point
     else
-      prompt('tie')
+      self.winner = 'none'
     end
   end
 
@@ -226,7 +235,9 @@ class RPSGame
         human.choose
         computer.choose
         display_moves
-        display_winner
+
+        decide_winner
+        display_winner(winner)
         display_score
         if human.score == 3 || computer.score == 3
           display_final_result
