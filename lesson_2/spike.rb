@@ -5,7 +5,7 @@ As long as the user doesn't quit, keep track of a history of moves by both the h
 =end
 
 =begin
-PROBLEM: Keep track of a history of moves
+PROBLEM: Keep track of a history of moves AND display it if desired
 
 input: press [x] to see past moves
 output:
@@ -40,13 +40,27 @@ DATA STRUCTURES:
   display_score
 
   goal:
-  Break up display_winner
-    - calculate winner     -> RPSGame class
-        - update_score     -> Scorable, this will update the history and score
-  
-  move_history    -> Player class b/c each player has a history
   display_history -> Displayable, upcase winning move
+    - display the history
+    - ask the user if they want to see the history
+
+  ------Done
+  Break up display_winner
+      - calculate winner     -> RPSGame class
+          - update_score     -> Scorable, this will update the history and score
+
+  move_history    -> Player class b/c each player has a history
+    INIT a move_history instance variable to an empty array within the Player class
+    APPEND the choice within each Player#choose
+
+ask the user if they want to see the history
+  - When they make their move, they can also choose to see the history
+  - if they decide to input the history
+    - the scoreboard pops up
+    - they are prompted to make their choice
 
 ALGORITHM:
+
+
 CODE:
 =end

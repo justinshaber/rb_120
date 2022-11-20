@@ -70,11 +70,12 @@ end
 
 class Player
   include Displayable, Scorable
-  attr_accessor :move, :name
+  attr_accessor :move, :name, :move_history
 
   def initialize
     set_name
     @score = 0
+    @move_history = []
   end
 end
 
@@ -95,7 +96,7 @@ class Human < Player
     loop do
       prompt('game_prompt', options: Move::VALUES.values.join(', '))
       choice = gets.chomp.downcase
-      break if valid_choice?(choice)
+      break if valid_choice?(choice) 
       prompt('invalid_choice')
     end
     reset_display
@@ -108,6 +109,8 @@ class Human < Player
                 when 'lizard'   then Lizard.new
                 when 'spock'    then Spock.new
                 end
+
+    self.move_history << choice
   end
 
   def valid_choice?(choice)
@@ -130,6 +133,8 @@ class Computer < Player
                 when 'lizard'   then Lizard.new
                 when 'spock'    then Spock.new
                 end
+
+    self.move_history << choice
   end
 end
 
