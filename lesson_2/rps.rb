@@ -92,7 +92,14 @@ class Human < Player
     end
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
-    self.move = Move.new(choice)
+
+    self.move = case choice
+                when 'rock'     then Rock.new
+                when 'paper'    then Paper.new
+                when 'scissors' then Scissors.new
+                when 'lizard'   then Lizard.new
+                when 'spock'    then Spock.new
+                end
   end
 
   def valid_choice?(choice)
@@ -109,7 +116,14 @@ class Computer < Player
   end
 
   def choose
-    self.move = Move.new(Move::VALUES.values.sample)
+    choice = Move::VALUES.values.sample
+    self.move = case choice
+                when 'rock'     then Rock.new
+                when 'paper'    then Paper.new
+                when 'scissors' then Scissors.new
+                when 'lizard'   then Lizard.new
+                when 'spock'    then Spock.new
+                end
   end
 end
 
@@ -124,20 +138,62 @@ class Move
     sp: 'spock'
   }
 
-  WIN_OPTIONS = {
-    'rock' => ['lizard', 'scissors'],
-    'paper' => ['rock', 'spock'],
-    'scissors' => ['lizard', 'paper'],
-    'lizard' => ['paper', 'spock'],
-    'spock' => ['rock', 'scissors']
-  }
-
   def initialize(value)
     @value = value
   end
 
   def to_s
     @value
+  end
+end
+
+class Rock < Move
+  def initialize
+    @value = 'rock'
+  end
+
+  def beats(other_move)
+    ['lizard', 'scissors'].include?(other_move.to_s)
+  end
+end
+
+class Paper < Move
+  def initialize
+    @value = 'paper'
+  end
+
+  def beats(other_move)
+    ['rock', 'spock'].include?(other_move.to_s)
+  end
+end
+
+class Scissors < Move
+  def initialize
+    @value = 'scissors'
+  end
+
+  def beats(other_move)
+    ['lizard', 'paper'].include?(other_move.to_s)
+  end
+end
+
+class Lizard < Move
+  def initialize
+    @value = 'lizard'
+  end
+
+  def beats(other_move)
+    ['paper', 'spock'].include?(other_move.to_s)
+  end
+end
+
+class Spock < Move
+  def initialize
+    @value = 'spock'
+  end
+
+  def beats(other_move)
+    ['rock', 'scissors'].include?(other_move.to_s)
   end
 end
 
@@ -152,10 +208,10 @@ class RPSGame
   end
 
   def display_winner
-    if Move::WIN_OPTIONS[human.move.to_s].include?(computer.move.to_s)
+    if human.move.beats(computer.move)
       prompt('win', winner: human.name)
       human.score_point
-    elsif Move::WIN_OPTIONS[computer.move.to_s].include?(human.move.to_s)
+    elsif computer.move.beats(human.move)
       prompt('lose', winner: computer.name)
       computer.score_point
     else
