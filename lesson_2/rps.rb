@@ -134,13 +134,6 @@ class Move
 
   def initialize(value)
     @value = value
-    # @value = case value
-    #          when 'rock'     then Rock.new
-    #          when 'paper'    then Paper.new
-    #          when 'scissors' then Scissors.new
-    #          when 'Lizard'   then Lizard.new
-    #          when 'Spock'    then Spock.new
-    #          end
   end
 
   def to_s
@@ -206,4 +199,3 @@ class RPSGame
 end
 
 RPSGame.new.play
-# playing with git some more

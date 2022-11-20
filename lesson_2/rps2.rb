@@ -1,9 +1,7 @@
+require 'pry'
+
 class Move
   VALUES = ['rock', 'paper', 'scissors']
-
-  def initialize(value)
-    @value = value
-  end
 
   def rock?
     @value == 'rock'
@@ -16,31 +14,55 @@ class Move
   def scissors?
     @value == 'scissors'
   end
+end
+
+class Rock < Move
+  def initialize
+    @value = 'rock'
+  end
 
   def >(other_move)
-    if rock?
-      return true if other_move.scissors?
-      return false
-    elsif paper?
-      return true if other_move.rock?
-      return false
-    elsif scissors?
-      return true if other_move.scissors?
-      return false
-    end
+    other_move.scissors?
   end
 
   def <(other_move)
-    if rock?
-      return true if other_move.paper?
-      return false
-    elsif paper?
-      return true if other_move.scissors?
-      return false
-    elsif scissors?
-      return true if other_move.rock?
-      return false
-    end
+    other_move.paper?
+  end
+
+  def to_s
+    @value
+  end
+end
+
+class Paper < Move
+  def initialize
+    @value = 'paper'
+  end
+
+  def >(other_move)
+    other_move.rock?
+  end
+
+  def <(other_move)
+    other_move.scissors?
+  end
+
+  def to_s
+    @value
+  end
+end
+
+class Scissors < Move
+  def initialize
+    @value = 'scissors'
+  end
+
+  def >(other_move)
+    other_move.paper?
+  end
+
+  def <(other_move)
+    other_move.rock?
   end
 
   def to_s
@@ -49,10 +71,15 @@ class Move
 end
 
 class Player
-  attr_accessor :move, :name
+  attr_accessor :name
+  attr_writer :move
 
   def initialize
     set_name
+  end
+
+  def move
+    @move
   end
 end
 
@@ -75,7 +102,13 @@ class Human < Player
       choice = gets.chomp
       break if Move::VALUES.include?(choice)
     end
-    self.move = Move.new(choice)
+    # self.move = Move.new(choice)
+
+    self.move = case choice
+                when 'rock'     then Rock.new
+                when 'paper'    then Paper.new
+                when 'scissors' then Scissors.new
+                end
   end
 end
 
@@ -85,19 +118,14 @@ class Computer < Player
   end
 
   def choose
-    self.move = Move.new(Move::VALUES.sample)
+    choice = Move::VALUES.sample
+    # self.move = Move.new(Move::VALUES.sample)
+    self.move = case choice
+                when 'rock'     then Rock.new
+                when 'paper'    then Paper.new
+                when 'scissors' then Scissors.new
+                end
   end
-end
-
-class Rule
-  def initialize
-    # not sure what the "state" of a rule object should be
-  end
-end
-
-# not sure where "compare" goes yet
-def compare(move1, move2)
-
 end
 
 class RPSGame
@@ -119,7 +147,6 @@ class RPSGame
   def display_winner
     puts "#{human.name} chose #{human.move}."
     puts "#{computer.name} chose #{computer.move}."
-
     if human.move > computer.move
       puts "#{human.name} won!"
     elsif human.move < computer.move
