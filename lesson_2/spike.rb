@@ -59,8 +59,45 @@ ask the user if they want to see the history
     - the scoreboard pops up
     - they are prompted to make their choice
 
+Ask user to make a choice - r,p,s,l,sp or h to view history
+  if no valid choice - ask again
+  if they make a choice - continue with the game
+  if they choose h - show history, ask user to make a choice (but don't show 'h')
+
 ALGORITHM:
 
-
+INIT boolean = true
+LOOP
+  IF boolean
+    PROMPT USER TO MAKE CHOICE && SHOW HISTORY PROMPT
+  else
+    PROMPT USER TO MAKE CHOICE
+  end
+  BREAK IF choice is a valid move
+  IF choice is 'h'
+    RESET_Display
+    DISPLAY History
+    boolean = false
+    NEXT
+  PROMPT invalid choice
+  boolean = true
 CODE:
+
+  choice = nil
+  show_history_switch = true
+    loop do
+      prompt('game_prompt', options: Move::VALUES.values.join(', '))
+      prompt('show history') if show_history_switch       # create prompt('show history')
+      choice = gets.chomp.downcase
+      break if valid_move?(choice)                        
+      if choice == 'h'
+        reset_display
+        display_history                                   # create display_history
+        show_history_switch = false
+        next
+      end
+      prompt('invalid_choice')
+      show_history_switch = true
+    end
+    reset_display
 =end

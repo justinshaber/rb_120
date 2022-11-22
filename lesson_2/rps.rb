@@ -1,3 +1,10 @@
+=begin
+TO DO
+Make history pretty
+Show how each move beats the other
+Personalities
+=end
+
 require 'yaml'
 require 'Pry'
 
@@ -17,6 +24,7 @@ module Displayable
   end
 
   def display_welcome_message
+    reset_display
     prompt('welcome')
   end
 
@@ -50,8 +58,10 @@ module Displayable
     human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
   end
 
-  def display_info
-    
+  def display_history
+    Player.move_history.each do |k,v|
+      puts "#{k} => #{v}" 
+    end
   end
 end
 
@@ -75,7 +85,15 @@ class Player
   def initialize
     set_name
     @score = 0
-    @move_history = []
+    # @move_history = []
+    @@move_history = {
+                        human: [],
+                        computer: []
+                      }
+  end
+
+  def self.move_history
+    @@move_history
   end
 end
 
@@ -93,11 +111,21 @@ class Human < Player
 
   def choose
     choice = nil
+    show_history_switch = true
     loop do
       prompt('game_prompt', options: Move::VALUES.values.join(', '))
+      prompt('show_history_prompt') if show_history_switch == true
       choice = gets.chomp.downcase
-      break if valid_choice?(choice) 
+      break if valid_move?(choice)
+      if choice == 'h'
+        reset_display
+        display_history                                   # create display_history
+        show_history_switch = false
+        next
+      end
+      reset_display
       prompt('invalid_choice')
+      show_history_switch = true
     end
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
@@ -110,10 +138,10 @@ class Human < Player
                 when 'spock'    then Spock.new
                 end
 
-    self.move_history << choice
+    Player.move_history[:human] << choice
   end
 
-  def valid_choice?(choice)
+  def valid_move?(choice)
     Move::VALUES.key?(choice.to_sym) ||
       Move::VALUES.value?(choice)
   end
@@ -125,16 +153,8 @@ class Computer < Player
   end
 
   def choose
-    choice = Move::VALUES.values.sample
-    self.move = case choice
-                when 'rock'     then Rock.new
-                when 'paper'    then Paper.new
-                when 'scissors' then Scissors.new
-                when 'lizard'   then Lizard.new
-                when 'spock'    then Spock.new
-                end
-
-    self.move_history << choice
+    self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
+    Player.move_history[:computer] << self.move.value
   end
 end
 
@@ -148,10 +168,6 @@ class Move
     l: 'lizard',
     sp: 'spock'
   }
-
-  def initialize(value)
-    @value = value
-  end
 
   def to_s
     @value

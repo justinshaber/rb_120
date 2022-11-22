@@ -1,8 +1,9 @@
 welcome: "~Welcome to Rock-Paper-Scissors-Lizard-Spock~
         \n~The first to win three games is the WORLD CHAMPION! Good luck!~
-        \n=>Choose one to begin:"
-game_prompt: "=>%{options}
+        \n\n=> Choose one to begin:"
+game_prompt: "=> %{options}
         \n\tor (r, p, s, l, sp)"
+show_history_prompt: "press [h] to view match history"
 win: "%{winner} won!"
 lose: "You lost...%{winner} won..."
 tie: "It's a tie!"
