@@ -3,6 +3,7 @@ TO DO
 Make history pretty
 Show how each move beats the other
 Personalities
+Organize moves into module
 =end
 
 require 'yaml'
@@ -83,9 +84,7 @@ class Player
   attr_accessor :move, :name, :move_history
 
   def initialize
-    set_name
     @score = 0
-    # @move_history = []
     @@move_history = {
                         human: [],
                         computer: []
@@ -98,6 +97,11 @@ class Player
 end
 
 class Human < Player
+  def initialize
+    set_name
+    super
+  end
+
   def set_name
     n = ""
     loop do
@@ -147,14 +151,52 @@ class Human < Player
   end
 end
 
-class Computer < Player
-  def set_name
-    self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
+# class Computer < Player
+#   def set_name
+#     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
+#   end
+
+#   def choose
+#     self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
+#     Player.move_history[:computer] << self.move.value
+#   end
+# end
+
+module Personalities
+  class R2D2 < Player
+    def initialize
+      self.name = "R2D2"
+      super
+    end
+
+    def choose
+      self.move = Rock.new
+      Player.move_history[:computer] << self.move.value
+    end
   end
 
-  def choose
-    self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
-    Player.move_history[:computer] << self.move.value
+  class Hal < Player
+    def initialize
+      self.name = "Hal"
+      super
+    end
+
+    def choose
+      self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
+      Player.move_history[:computer] << self.move.value
+    end
+  end
+
+  class Patrick < Player
+    def initialize
+      self.name = "Patrick"
+      super
+    end
+
+    def choose
+      self.move = Paper.new
+      Player.move_history[:computer] << self.move.value
+    end
   end
 end
 
@@ -231,7 +273,11 @@ class RPSGame
 
   def initialize
     @human = Human.new
-    @computer = Computer.new()
+    @computer = [ 
+                  Personalities::R2D2.new,
+                  Personalities::Hal.new,
+                  Personalities::Patrick.new
+                ].sample
   end
 
   def decide_winner
