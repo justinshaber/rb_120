@@ -1,8 +1,8 @@
 =begin
 TO DO
 Make history pretty
-Show how each move beats the other
-Personalities
+Show how each move beats? the other
+Computer
 Organize moves into module
 =end
 
@@ -133,14 +133,7 @@ class Human < Player
     end
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
-
-    self.move = case choice
-                when 'rock'     then Rock.new
-                when 'paper'    then Paper.new
-                when 'scissors' then Scissors.new
-                when 'lizard'   then Lizard.new
-                when 'spock'    then Spock.new
-                end
+    self.move = Move.new(choice)
 
     Player.move_history[:human] << choice
   end
@@ -151,50 +144,63 @@ class Human < Player
   end
 end
 
-# class Computer < Player
-#   def set_name
-#     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
-#   end
-
-#   def choose
-#     self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
-#     Player.move_history[:computer] << self.move.value
-#   end
-# end
-
-module Personalities
-  class R2D2 < Player
-    def initialize
-      self.name = "R2D2"
-      super
-    end
-
-    def choose
-      self.move = Rock.new
-      Player.move_history[:computer] << self.move.value
-    end
-  end
-
-  class Hal < Player
+module Computer
+  class Hal < Player # Chooses randomly
     def initialize
       self.name = "Hal"
       super
     end
 
     def choose
-      self.move = [Rock.new, Paper.new, Scissors.new, Lizard.new, Spock.new].sample
+      self.move = Move.new(Move::VALUES.values.sample)
       Player.move_history[:computer] << self.move.value
     end
   end
 
-  class Patrick < Player
+  class Anakin < Player # Hand chopped off, can only play rock.
+    def initialize
+      self.name = "Anakin"
+      super
+    end
+
+    def choose
+      self.move = 'rock'
+      Player.move_history[:computer] << self.move
+    end
+  end
+
+  class Patrick < Player # No hands, can only play paper.
     def initialize
       self.name = "Patrick"
       super
     end
 
     def choose
-      self.move = Paper.new
+      self.move = 'paper'
+      Player.move_history[:computer] << self.move
+    end
+  end
+
+  class Watson < Player # wins every time
+    def initialize
+      self.name = "Patrick"
+      super
+    end
+
+    def choose
+      self.move = Move.new(Move::VALUES.values.sample)
+      Player.move_history[:computer] << self.move.value
+    end
+  end
+
+  class C3PO < Player # Loses every time
+    def initialize
+      self.name = "Patrick"
+      super
+    end
+
+    def choose
+      self.move = Move.new(Move::VALUES.values.sample)
       Player.move_history[:computer] << self.move.value
     end
   end
@@ -202,6 +208,10 @@ end
 
 class Move
   attr_reader :value
+
+  def initialize(value)
+    @value = value
+  end
 
   VALUES = {
     r: 'rock',
@@ -211,58 +221,16 @@ class Move
     sp: 'spock'
   }
 
+  WIN_OPTIONS = {
+    'rock' => ['lizard', 'scissors'],
+    'paper' => ['rock', 'spock'],
+    'scissors' => ['lizard', 'paper'],
+    'lizard' => ['paper', 'spock'],
+    'spock' => ['rock', 'scissors']
+  }
+
   def to_s
     @value
-  end
-end
-
-class Rock < Move
-  def initialize
-    @value = 'rock'
-  end
-
-  def beats(other_move)
-    ['lizard', 'scissors'].include?(other_move.to_s)
-  end
-end
-
-class Paper < Move
-  def initialize
-    @value = 'paper'
-  end
-
-  def beats(other_move)
-    ['rock', 'spock'].include?(other_move.to_s)
-  end
-end
-
-class Scissors < Move
-  def initialize
-    @value = 'scissors'
-  end
-
-  def beats(other_move)
-    ['lizard', 'paper'].include?(other_move.to_s)
-  end
-end
-
-class Lizard < Move
-  def initialize
-    @value = 'lizard'
-  end
-
-  def beats(other_move)
-    ['paper', 'spock'].include?(other_move.to_s)
-  end
-end
-
-class Spock < Move
-  def initialize
-    @value = 'spock'
-  end
-
-  def beats(other_move)
-    ['rock', 'scissors'].include?(other_move.to_s)
   end
 end
 
@@ -274,9 +242,11 @@ class RPSGame
   def initialize
     @human = Human.new
     @computer = [ 
-                  Personalities::R2D2.new,
-                  Personalities::Hal.new,
-                  Personalities::Patrick.new
+                  Computer::Anakin.new,
+                  Computer::Hal.new,
+                  Computer::Patrick.new,
+                  Computer::Watson.new,
+                  Computer::C3PO.new
                 ].sample
   end
 
@@ -284,10 +254,10 @@ class RPSGame
     human_move = human.move
     computer_move = computer.move
 
-    if human_move.beats(computer_move)
+    if Move::WIN_OPTIONS[human.move.to_s].include?(computer.move.to_s)
       self.winner = 'human'
       human.score_point
-    elsif computer_move.beats(human_move)
+    elsif Move::WIN_OPTIONS[computer.move.to_s].include?(human.move.to_s)
       self.winner = 'computer'
       computer.score_point
     else

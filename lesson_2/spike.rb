@@ -101,3 +101,20 @@ CODE:
     end
     reset_display
 =end
+
+=begin
+PROBLEM:
+Have a computer lose every time
+
+  input: String - human move
+  output: String - computer move that loses to it
+
+Example
+  'rock' => ['lizard', 'scissors']
+  'paper' => ['rock', 'spock']
+  'scissors' => ['lizard', 'paper']
+  'lizard' => ['paper', 'spock']
+  'spock' => ['rock', 'scissors']
+
+  
+=end
