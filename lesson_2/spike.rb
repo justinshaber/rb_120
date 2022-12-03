@@ -104,10 +104,10 @@ CODE:
 
 =begin
 PROBLEM:
-Have a computer lose every time
+Have a computer win every time
 
   input: String - human move
-  output: String - computer move that loses to it
+  output: String - computer move that beats it
 
 Example
   'rock' => ['lizard', 'scissors']
@@ -116,5 +116,48 @@ Example
   'lizard' => ['paper', 'spock']
   'spock' => ['rock', 'scissors']
 
-  
+  WIN_OPTIONS = {
+    'rock' => ['lizard', 'scissors'],
+    'paper' => ['rock', 'spock'],
+    'scissors' => ['lizard', 'paper'],
+    'lizard' => ['paper', 'spock'],
+    'spock' => ['rock', 'scissors']
+  }
+
+  LOSE_OPTIONS = {
+    'rock' => ['paper', 'spock'],
+    'paper' => ['scissors', 'lizard'],
+    'scissors' => ['rock', 'spock'],
+    'lizard' => ['rock', 'scissors'],
+    'spock' => ['paper', 'lizard']
+  }
 =end
+=begin
+           Justin     Comp   Score
+Round 1   SCISSORS    paper   1-0
+=end
+
+human = "Justin"
+computer = "R2D2"
+
+move_history = {
+                  human => ['rock', 'paper', 'scissors', 'spock'],
+                  computer => ['paper', 'rock', 'scissors', 'rock']
+                }
+
+puts "Justin     Computer   Score"
+move_history.each do |k,v|
+  puts "#{k} => #{v}"
+end
+
+class Player
+
+end
+
+class Human < Player
+
+end
+
+class Computer < Player
+  
+end

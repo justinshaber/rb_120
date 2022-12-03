@@ -1,9 +1,20 @@
 =begin
 TO DO
+
+Is Human the right class for the ability to toggle history?
+  - put it in the main game
+  - access to both Human and Computer
+
+Give names when showing history
+figure out what is going on with class variables
+  - put each history in each class
+  - must be able to be viewed by either class
+
+Option to show history after match
+Reset history if they choose to continue playing another match
+
 Make history pretty
 Show how each move beats? the other
-Computer
-Organize moves into module
 =end
 
 require 'yaml'
@@ -86,13 +97,17 @@ class Player
   def initialize
     @score = 0
     @@move_history = {
-                        human: [],
-                        computer: []
+                        :human => [],
+                        :computer => []
                       }
   end
 
   def self.move_history
     @@move_history
+  end
+
+  def beats?(other_player)
+    Move::WIN_OPTIONS[self.move.to_s].include?(other_player.move.to_s)
   end
 end
 
@@ -123,7 +138,7 @@ class Human < Player
       break if valid_move?(choice)
       if choice == 'h'
         reset_display
-        display_history                                   # create display_history
+        display_history
         show_history_switch = false
         next
       end
@@ -134,8 +149,7 @@ class Human < Player
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
     self.move = Move.new(choice)
-
-    Player.move_history[:human] << choice
+    Player.move_history[:human] << choice.dup
   end
 
   def valid_move?(choice)
@@ -153,7 +167,7 @@ module Computer
 
     def choose
       self.move = Move.new(Move::VALUES.values.sample)
-      Player.move_history[:computer] << self.move.value
+      Player.move_history[:computer] << self.move.value.dup
     end
   end
 
@@ -164,43 +178,55 @@ module Computer
     end
 
     def choose
-      self.move = 'rock'
-      Player.move_history[:computer] << self.move
+      self.move = Move.new('rock')
+      Player.move_history[:computer] << self.move.value
     end
   end
 
-  class Patrick < Player # No hands, can only play paper.
+  class Patrick < Player # No fingers, can only play paper.
     def initialize
       self.name = "Patrick"
       super
     end
 
     def choose
-      self.move = 'paper'
-      Player.move_history[:computer] << self.move
+      self.move = Move.new('paper')
+      Player.move_history[:computer] << self.move.value
     end
   end
 
   class Watson < Player # wins every time
+    LOSE_OPTIONS = {
+      'rock' => ['paper', 'spock'],
+      'paper' => ['scissors', 'lizard'],
+      'scissors' => ['rock', 'spock'],
+      'lizard' => ['rock', 'scissors'],
+      'spock' => ['paper', 'lizard']
+    }
+
     def initialize
-      self.name = "Patrick"
+      self.name = "Watson"
       super
     end
 
     def choose
-      self.move = Move.new(Move::VALUES.values.sample)
+      human_move = Player.move_history[:human].last.downcase
+      computer_move = LOSE_OPTIONS[human_move].sample
+      self.move = Move.new(computer_move)
       Player.move_history[:computer] << self.move.value
     end
   end
 
   class C3PO < Player # Loses every time
     def initialize
-      self.name = "Patrick"
+      self.name = "C3PO"
       super
     end
 
     def choose
-      self.move = Move.new(Move::VALUES.values.sample)
+      human_move = Player.move_history[:human].last.downcase
+      computer_move = Move::WIN_OPTIONS[human_move].sample
+      self.move = Move.new(computer_move)
       Player.move_history[:computer] << self.move.value
     end
   end
@@ -251,15 +277,14 @@ class RPSGame
   end
 
   def decide_winner
-    human_move = human.move
-    computer_move = computer.move
-
-    if Move::WIN_OPTIONS[human.move.to_s].include?(computer.move.to_s)
+    if human.beats?(computer)
       self.winner = 'human'
       human.score_point
-    elsif Move::WIN_OPTIONS[computer.move.to_s].include?(human.move.to_s)
+      Player.move_history[:human][-1].upcase!
+    elsif computer.beats?(human)
       self.winner = 'computer'
       computer.score_point
+      Player.move_history[:computer][-1].upcase!
     else
       self.winner = 'none'
     end
@@ -291,7 +316,7 @@ class RPSGame
     answer = nil
 
     loop do
-      puts "Would you like to play again? (y/n)"
+      prompt("ask_play_again")
       answer = gets.chomp
       break if ['y', 'n'].include?(answer.downcase)
       puts "Sorry, must be y or n."
