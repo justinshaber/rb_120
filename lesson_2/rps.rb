@@ -1,4 +1,5 @@
 require 'yaml'
+require 'pry'
 
 module Displayable
   MESSAGE = YAML.load_file('rps_messages.yml')
@@ -270,15 +271,17 @@ class RPSGame
     @computer = choose_opponent
   end
 
+  def winning_actions(player)
+    self.winner = player.name
+    player.score_point
+    Player.move_history[player.name][-1].upcase!
+  end
+
   def decide_winner
     if human.beats?(computer)
-      self.winner = 'human'
-      human.score_point
-      Player.move_history[human.name][-1].upcase!
+      winning_actions(human)
     elsif computer.beats?(human)
-      self.winner = 'computer'
-      computer.score_point
-      Player.move_history[computer.name][-1].upcase!
+      winning_actions(computer)
     else
       self.winner = 'none'
     end
