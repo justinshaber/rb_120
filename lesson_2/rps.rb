@@ -1,24 +1,4 @@
-=begin
-TO DO
-
-Is Human the right class for the ability to toggle history?
-  - put it in the main game
-  - access to both Human and Computer
-
-Give names when showing history
-figure out what is going on with class variables
-  - put each history in each class
-  - must be able to be viewed by either class
-
-Option to show history after match
-Reset history if they choose to continue playing another match
-
-Make history pretty
-Show how each move beats? the other
-=end
-
 require 'yaml'
-require 'Pry'
 
 module Displayable
   MESSAGE = YAML.load_file('rps_messages.yml')
@@ -53,9 +33,9 @@ module Displayable
 
   def display_winner(winner)
     case winner
-      when 'human'    then prompt('win', winner: human.name)
-      when 'computer' then prompt('lose', winner: computer.name)
-      when 'none'     then prompt('tie')
+    when 'human'    then prompt('win', winner: human.name)
+    when 'computer' then prompt('lose', winner: computer.name)
+    when 'none'     then prompt('tie')
     end
   end
 
@@ -67,12 +47,16 @@ module Displayable
   end
 
   def display_final_result
-    human.score > computer.score ? prompt('final_winner') : prompt('final_loser')
+    if human.score > computer.score
+      prompt('final_winner')
+    else
+      prompt('final_loser')
+    end
   end
 
   def display_history
-    Player.move_history.each do |k,v|
-      puts "#{k} => #{v}" 
+    Player.move_history.each do |k, v|
+      puts "#{k} => #{v}"
     end
   end
 end
@@ -94,12 +78,10 @@ class Player
   include Displayable, Scorable
   attr_accessor :move, :name, :move_history
 
+  @@move_history = {}
+
   def initialize
     @score = 0
-    @@move_history = {
-                        :human => [],
-                        :computer => []
-                      }
   end
 
   def self.move_history
@@ -107,13 +89,14 @@ class Player
   end
 
   def beats?(other_player)
-    Move::WIN_OPTIONS[self.move.to_s].include?(other_player.move.to_s)
+    Move::WIN_OPTIONS[move.to_s].include?(other_player.move.to_s)
   end
 end
 
 class Human < Player
   def initialize
     set_name
+    Player.move_history[name] = []
     super
   end
 
@@ -149,7 +132,7 @@ class Human < Player
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
     self.move = Move.new(choice)
-    Player.move_history[:human] << choice.dup
+    Player.move_history[name] << choice.dup
   end
 
   def valid_move?(choice)
@@ -162,36 +145,39 @@ module Computer
   class Hal < Player # Chooses randomly
     def initialize
       self.name = "Hal"
+      Player.move_history[name] = []
       super
     end
 
     def choose
       self.move = Move.new(Move::VALUES.values.sample)
-      Player.move_history[:computer] << self.move.value.dup
+      Player.move_history[name] << move.value.dup
     end
   end
 
   class Anakin < Player # Hand chopped off, can only play rock.
     def initialize
       self.name = "Anakin"
+      Player.move_history[name] = []
       super
     end
 
     def choose
       self.move = Move.new('rock')
-      Player.move_history[:computer] << self.move.value
+      Player.move_history[name] << move.value.dup
     end
   end
 
   class Patrick < Player # No fingers, can only play paper.
     def initialize
       self.name = "Patrick"
+      Player.move_history[name] = []
       super
     end
 
     def choose
       self.move = Move.new('paper')
-      Player.move_history[:computer] << self.move.value
+      Player.move_history[name] << move.value.dup
     end
   end
 
@@ -206,28 +192,32 @@ module Computer
 
     def initialize
       self.name = "Watson"
+      Player.move_history[name] = []
       super
     end
 
     def choose
-      human_move = Player.move_history[:human].last.downcase
+      human_name = Player.move_history.keys[0]
+      human_move = Player.move_history[human_name].last.downcase
       computer_move = LOSE_OPTIONS[human_move].sample
       self.move = Move.new(computer_move)
-      Player.move_history[:computer] << self.move.value
+      Player.move_history[name] << move.value.dup
     end
   end
 
   class C3PO < Player # Loses every time
     def initialize
       self.name = "C3PO"
+      Player.move_history[name] = []
       super
     end
 
     def choose
-      human_move = Player.move_history[:human].last.downcase
+      human_name = Player.move_history.keys[0]
+      human_move = Player.move_history[human_name].last.downcase
       computer_move = Move::WIN_OPTIONS[human_move].sample
       self.move = Move.new(computer_move)
-      Player.move_history[:computer] << self.move.value
+      Player.move_history[name] << move.value.dup
     end
   end
 end
@@ -265,26 +255,30 @@ class RPSGame
   include Displayable, Scorable
   attr_accessor :human, :computer, :winner
 
+  def choose_opponent
+    case rand(1..5)
+    when 1 then Computer::Anakin.new
+    when 2 then Computer::Hal.new
+    when 3 then Computer::Patrick.new
+    when 4 then Computer::Watson.new
+    when 5 then Computer::C3PO.new
+    end
+  end
+
   def initialize
     @human = Human.new
-    @computer = [ 
-                  Computer::Anakin.new,
-                  Computer::Hal.new,
-                  Computer::Patrick.new,
-                  Computer::Watson.new,
-                  Computer::C3PO.new
-                ].sample
+    @computer = choose_opponent
   end
 
   def decide_winner
     if human.beats?(computer)
       self.winner = 'human'
       human.score_point
-      Player.move_history[:human][-1].upcase!
+      Player.move_history[human.name][-1].upcase!
     elsif computer.beats?(human)
       self.winner = 'computer'
       computer.score_point
-      Player.move_history[:computer][-1].upcase!
+      Player.move_history[computer.name][-1].upcase!
     else
       self.winner = 'none'
     end
@@ -297,7 +291,6 @@ class RPSGame
         human.choose
         computer.choose
         display_moves
-
         decide_winner
         display_winner(winner)
         display_score
