@@ -56,9 +56,20 @@ module Displayable
   end
 
   def display_history
+    reset_display
     Player.move_history.each do |k, v|
       puts "#{k} => #{v}"
     end
+  end
+
+  def display_prompt_choices(switch)
+    prompt('game_prompt', options: Move::VALUES.values.join(', '))
+    prompt('show_history_prompt') if switch == true
+  end
+
+  def display_invalid_choice
+    reset_display
+    prompt('invalid_choice')
   end
 end
 
@@ -96,12 +107,12 @@ end
 
 class Human < Player
   def initialize
-    set_name
+    self.name = retrieve_name
     Player.move_history[name] = []
     super
   end
 
-  def set_name
+  def retrieve_name
     n = ""
     loop do
       puts "What's your name?"
@@ -109,31 +120,36 @@ class Human < Player
       break unless n.empty?
       puts "Sorry, must enter a value."
     end
-    self.name = n
+    n
   end
 
-  def choose
-    choice = nil
-    show_history_switch = true
-    loop do
-      prompt('game_prompt', options: Move::VALUES.values.join(', '))
-      prompt('show_history_prompt') if show_history_switch == true
-      choice = gets.chomp.downcase
-      break if valid_move?(choice)
-      if choice == 'h'
-        reset_display
-        display_history
-        show_history_switch = false
-        next
-      end
-      reset_display
-      prompt('invalid_choice')
-      show_history_switch = true
-    end
+  def update_choice_history(choice)
     reset_display
     choice = Move::VALUES[choice.to_sym] if choice.length <= 2
     self.move = Move.new(choice)
     Player.move_history[name] << choice.dup
+  end
+
+  def show_history?(choice)
+    choice == 'h'
+  end
+
+  def choose
+    choice = nil
+    switch = true
+    loop do
+      display_prompt_choices(switch)
+      choice = gets.chomp.downcase
+      break if valid_move?(choice)
+      if choice == 'h'
+        display_history
+        switch = false
+        next
+      end
+      display_invalid_choice
+      switch = true
+    end
+    update_choice_history(choice)
   end
 
   def valid_move?(choice)
@@ -287,21 +303,30 @@ class RPSGame
     end
   end
 
+  def main_game_sequence
+    human.choose
+    computer.choose
+    display_moves
+    decide_winner
+    display_winner(winner)
+    display_score
+  end
+
+  def match_winner?
+    if human.score == 3 || computer.score == 3
+      display_final_result
+      reset_scores
+      return true
+    end
+    false
+  end
+
   def play
     display_welcome_message
     loop do
       loop do
-        human.choose
-        computer.choose
-        display_moves
-        decide_winner
-        display_winner(winner)
-        display_score
-        if human.score == 3 || computer.score == 3
-          display_final_result
-          reset_scores
-          break
-        end
+        main_game_sequence
+        break if match_winner?
       end
       break unless play_again?
     end
