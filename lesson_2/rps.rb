@@ -1,5 +1,4 @@
 require 'yaml'
-require 'pry'
 
 module Displayable
   MESSAGE = YAML.load_file('rps_messages.yml')
