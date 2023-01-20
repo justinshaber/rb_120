@@ -108,8 +108,8 @@ class TTT_Game
     puts "Thanks for playing! Goodbye!"
   end
 
-  def display_board(clear_screen: true)
-    clear_display if clear_screen
+  def display_board
+    # clear_display if clear_screen
     puts "You are a #{HUMAN_MARKER}. Cimputer is #{COMPUTER_MARKER}."
     puts ""
     puts "     |     |"
@@ -148,7 +148,7 @@ class TTT_Game
   end
 
   def display_result
-    display_board
+    clear_screen_and_display_board
 
     case board.detect_winner
     when human.marker
@@ -177,7 +177,7 @@ class TTT_Game
     display_welcome_message
 
     loop do
-      display_board(clear_screen: false)
+      display_board
 
       loop do
         human_moves
@@ -186,7 +186,7 @@ class TTT_Game
         computer_moves
         break if board.someone_won? || board.full?
 
-        display_board
+        clear_screen_and_display_board
       end
       display_result
       break unless play_again?
