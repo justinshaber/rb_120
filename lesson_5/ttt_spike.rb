@@ -28,20 +28,16 @@ class Board
     !!winning_marker
   end
 
-  def count_human_marker(squares)
-    squares.collect(&:marker).count(TTT_Game::HUMAN_MARKER)
-  end
-
-  def count_computer_marker(squares)
-    squares.collect(&:marker).count(TTT_Game::COMPUTER_MARKER)
+  def three_identical_markers?(squares)
+    return nil if squares.any?(" ")
+    squares.uniq.size == 1
   end
 
   def winning_marker
     WINNING_LINES.each do |line|
-      if count_human_marker(@squares.values_at(*line)) == 3
-        return TTT_Game::HUMAN_MARKER
-      elsif count_computer_marker(@squares.values_at(*line)) == 3
-        return TTT_Game::COMPUTER_MARKER
+      squares = @squares.values_at(*line).collect(&:marker)
+      if three_identical_markers?(squares)
+        return squares.first
       end
     end
     nil
