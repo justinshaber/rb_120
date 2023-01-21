@@ -12,10 +12,6 @@ class Board
     reset
   end
 
-  def get_square_at(key)
-    @squares[key]
-  end
-
   def set_square_at(key, marker)
     @squares[key].marker = marker
   end
@@ -54,6 +50,20 @@ class Board
   def reset
     (1..9).each {|key| @squares[key] = Square.new}
   end
+
+  def draw
+    puts "     |     |"
+    puts "  #{@squares[1]}  |  #{@squares[2]}  |  #{@squares[3]}"
+    puts "     |     |"
+    puts "-----+-----+-----"
+    puts "     |     |"
+    puts "  #{@squares[4]}  |  #{@squares[5]}  |  #{@squares[6]}"
+    puts "     |     |"
+    puts "-----+-----+-----"
+    puts "     |     |"
+    puts "  #{@squares[7]}  |  #{@squares[8]}  |  #{@squares[9]}"
+    puts "     |     |"
+  end
 end
 
 class Square
@@ -62,7 +72,6 @@ class Square
   attr_accessor :marker
 
   def initialize(marker=INITIAL_MARKER)
-    # status to keep track of who is occupying this square
     @marker = marker
   end
 
@@ -109,20 +118,9 @@ class TTT_Game
   end
 
   def display_board
-    # clear_display if clear_screen
     puts "You are a #{HUMAN_MARKER}. Cimputer is #{COMPUTER_MARKER}."
     puts ""
-    puts "     |     |"
-    puts "  #{board.get_square_at(1)}  |  #{board.get_square_at(2)}  |  #{board.get_square_at(3)}"
-    puts "     |     |"
-    puts "-----+-----+-----"
-    puts "     |     |"
-    puts "  #{board.get_square_at(4)}  |  #{board.get_square_at(5)}  |  #{board.get_square_at(6)}"
-    puts "     |     |"
-    puts "-----+-----+-----"
-    puts "     |     |"
-    puts "  #{board.get_square_at(7)}  |  #{board.get_square_at(8)}  |  #{board.get_square_at(9)}"
-    puts "     |     |"
+    board.draw
     puts ""
   end
 
