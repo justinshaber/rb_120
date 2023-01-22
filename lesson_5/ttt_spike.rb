@@ -93,20 +93,62 @@ class TTT_Game
   COMPUTER_MARKER = 'O'
 
   attr_reader :board, :human, :computer
+  attr_accessor :current_player
 
   def initialize
     @board = Board.new
     @human = Player.new(HUMAN_MARKER)
     @computer = Player.new(COMPUTER_MARKER)
+    @current_player = nil
+  end
+
+  def play
+    clear_display
+    display_welcome_message
+    @current_player = set_first_to_go
+    clear_display
+
+    loop do
+      display_board
+
+      loop do
+        current_player_moves
+        break if board.someone_won? || board.full?
+        clear_screen_and_display_board if human_turn?
+      end
+      display_result
+      break unless play_again?
+      reset
+      display_play_again_message
+      @current_player = set_first_to_go
+    end
+
+    display_goodbye_message
+  end
+
+  private
+
+  def alternate_player(current)
+    current == 'Human' ? 'Computer' : 'Human'
   end
 
   def clear_display
     system 'clear'
   end
 
-  def display_welcome_message
-    puts "Welcome to TTT"
-    puts ""
+  def clear_screen_and_display_board
+    clear_display
+    display_board
+  end
+
+  def computer_moves
+    square = board.unmarked_keys.sample
+    board[square] = computer.marker
+  end
+
+  def current_player_moves
+    human_turn? ? human_moves : computer_moves
+    @current_player = alternate_player(@current_player)
   end
 
   def display_goodbye_message
@@ -114,15 +156,33 @@ class TTT_Game
   end
 
   def display_board
-    puts "You are a #{HUMAN_MARKER}. Cimputer is #{COMPUTER_MARKER}."
+    puts "You are #{HUMAN_MARKER}. Computer is #{COMPUTER_MARKER}."
     puts ""
     board.draw
     puts ""
   end
 
-  def clear_screen_and_display_board
-    clear_display
-    display_board
+  def display_play_again_message
+    puts "Let's play again!"
+    puts ""
+  end
+
+  def display_result
+    clear_screen_and_display_board
+
+    case board.winning_marker
+    when human.marker
+      puts "You won!"
+    when computer.marker
+      puts "Computer won!"
+    else
+      puts "It's a tie!"
+    end
+  end
+
+  def display_welcome_message
+    puts "Welcome to TTT"
+    puts ""
   end
 
   def human_moves
@@ -137,21 +197,19 @@ class TTT_Game
     board[square] = human.marker
   end
 
-  def computer_moves
-    square = board.unmarked_keys.sample
-    board[square] = computer.marker
+  def human_turn?
+    @current_player == 'Human'
   end
 
-  def display_result
-    clear_screen_and_display_board
-
-    case board.winning_marker
-    when human.marker
-      puts "You won!"
-    when computer.marker
-      puts "Computer won!"
+  def joinor(arr, delimiter = ", ", and_or = "or")
+    case arr.size
+    when 0 then ''
+    when 1 then arr.join
+    when 2 then arr.join(" #{and_or} ")
     else
-      puts "It's a tie!"
+      str = arr.join(delimiter)
+      str[-2] = " #{and_or} "
+      str
     end
   end
 
@@ -172,34 +230,22 @@ class TTT_Game
     clear_display
   end
 
-  def display_play_again_message
-    puts "Let's play again!"
-    puts ""
-  end
-
-  def play
-    clear_display
-    display_welcome_message
-
+  def set_first_to_go
+    first = nil
     loop do
-      display_board
+      puts "Who should go first?
+      \n[1] - You go first
+      \n[2] - Computer goes first
+      \n[3] - Computer chooses who goes first"
 
-      loop do
-        human_moves
-        break if board.someone_won? || board.full?
-
-        computer_moves
-        break if board.someone_won? || board.full?
-
-        clear_screen_and_display_board
-      end
-      display_result
-      break unless play_again?
-      reset
-      display_play_again_message
+      first = gets.chomp.to_i
+  
+      break if (1..3).include?(first)
+      clear_display
+      puts format("Invalid choice. Please choose #{joinor([1, 2, 3])}")
     end
-
-    display_goodbye_message
+  
+    first == 1 ? 'Human' : 'Computer'
   end
 end
 
