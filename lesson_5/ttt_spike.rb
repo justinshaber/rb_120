@@ -28,11 +28,6 @@ class Board
     !!winning_marker
   end
 
-  def three_identical_markers?(squares)
-    return nil if squares.any?(" ")
-    squares.uniq.size == 1
-  end
-
   def winning_marker
     WINNING_LINES.each do |line|
       squares = @squares.values_at(*line).collect(&:marker)
@@ -64,6 +59,13 @@ class Board
   end
   # rubocop:enable Metrics/AbcSize
   # rubocop:enable Metrics/MethodLength
+
+  private
+
+  def three_identical_markers?(squares)
+    return nil if squares.any?(" ")
+    squares.uniq.size == 1
+  end
 end
 
 class Square
@@ -85,30 +87,28 @@ class Square
 end
 
 class Player
-  attr_reader :marker
+  attr_accessor :marker, :name
 
-  def initialize(marker)
-    @marker = marker
+  def initialize
+    @name = nil
+    @marker = nil
   end
 end
 
 class TTTGame
-  HUMAN_MARKER = 'X'
-  COMPUTER_MARKER = 'O'
-
   attr_reader :board, :human, :computer
   attr_accessor :current_player
 
   def initialize
     @board = Board.new
-    @human = Player.new(HUMAN_MARKER)
-    @computer = Player.new(COMPUTER_MARKER)
+    @human = Player.new
+    @computer = Player.new
     @current_player = nil
   end
 
   def play
     clear_display
-    display_welcome_message
+    welcome_phase
     main_game_phase
     display_goodbye_message
   end
@@ -143,7 +143,7 @@ class TTTGame
   end
 
   def display_board
-    puts "You are #{HUMAN_MARKER}. Computer is #{COMPUTER_MARKER}."
+    puts "#{human.name} is #{human.marker}. #{computer.name} is #{computer.marker}."
     puts ""
     board.draw
     puts ""
@@ -159,9 +159,9 @@ class TTTGame
 
     case board.winning_marker
     when human.marker
-      puts "You won!"
+      puts "#{human.name} won!"
     when computer.marker
-      puts "Computer won!"
+      puts "#{computer.name} won!"
     else
       puts "It's a tie!"
     end
@@ -201,7 +201,6 @@ class TTTGame
   end
 
   def main_game_phase
-    @current_player = set_first_to_go
     loop do
       display_board
       player_turn_loop
@@ -242,7 +241,7 @@ class TTTGame
   def set_first_to_go
     first = nil
     loop do
-      puts "Who should go first?\n[1] - You go first\n[2] - Computer goes first"
+      puts "Who should go first?\n[1] - #{human.name} goes first\n[2] - #{computer.name} goes first"
 
       first = gets.chomp.to_i
 
@@ -253,6 +252,43 @@ class TTTGame
 
     clear_display
     first == 1 ? 'Human' : 'Computer'
+  end
+
+  def set_computer_marker
+    human.marker == 'X' ? 'O' : 'X'
+  end
+
+  def set_computer_name
+    ['John Lennon', 'George Harrison', 'Paul McCartney', 'Ringo Starr'].sample
+  end
+
+  def set_human_marker
+    marker = nil
+    loop do
+      puts "Choose any single character besides a space as your marker."
+
+      marker = gets.chomp
+
+      break if marker.size == 1 && marker != " "
+      clear_display
+      puts format("Invalid choice.")
+    end
+
+    marker
+  end
+
+  def set_human_name
+    puts "What's your name?"
+    gets.chomp
+  end
+
+  def welcome_phase
+    display_welcome_message
+    human.name = set_human_name
+    computer.name = set_computer_name
+    human.marker = set_human_marker
+    computer.marker = set_computer_marker
+    @current_player = set_first_to_go
   end
 end
 
