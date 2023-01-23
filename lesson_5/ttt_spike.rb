@@ -2,10 +2,10 @@ require 'pry'
 
 class Board
   WINNING_LINES = [
-                    [1, 2, 3], [4, 5, 6], [7, 8, 9],
-                    [1, 4, 7], [2, 5, 8], [3, 6, 9],
-                    [1, 5, 9], [3, 5, 7]
-                  ]
+    [1, 2, 3], [4, 5, 6], [7, 8, 9],
+    [1, 4, 7], [2, 5, 8], [3, 6, 9],
+    [1, 5, 9], [3, 5, 7]
+  ]
 
   def initialize
     @squares = {}
@@ -44,9 +44,11 @@ class Board
   end
 
   def reset
-    (1..9).each {|key| @squares[key] = Square.new}
+    (1..9).each { |key| @squares[key] = Square.new }
   end
 
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
   def draw
     puts "     |     |"
     puts "  #{@squares[1]}  |  #{@squares[2]}  |  #{@squares[3]}"
@@ -60,6 +62,8 @@ class Board
     puts "  #{@squares[7]}  |  #{@squares[8]}  |  #{@squares[9]}"
     puts "     |     |"
   end
+  # rubocop:enable Metrics/AbcSize
+  # rubocop:enable Metrics/MethodLength
 end
 
 class Square
@@ -88,7 +92,7 @@ class Player
   end
 end
 
-class TTT_Game
+class TTTGame
   HUMAN_MARKER = 'X'
   COMPUTER_MARKER = 'O'
 
@@ -105,24 +109,7 @@ class TTT_Game
   def play
     clear_display
     display_welcome_message
-    @current_player = set_first_to_go
-    clear_display
-
-    loop do
-      display_board
-
-      loop do
-        current_player_moves
-        break if board.someone_won? || board.full?
-        clear_screen_and_display_board if human_turn?
-      end
-      display_result
-      break unless play_again?
-      reset
-      display_play_again_message
-      @current_player = set_first_to_go
-    end
-
+    main_game_phase
     display_goodbye_message
   end
 
@@ -213,6 +200,25 @@ class TTT_Game
     end
   end
 
+  def main_game_phase
+    @current_player = set_first_to_go
+    loop do
+      display_board
+      player_turn_loop
+      display_result
+      break unless play_again?
+      reset_phase
+    end
+  end
+
+  def player_turn_loop
+    loop do
+      current_player_moves
+      break if board.someone_won? || board.full?
+      clear_screen_and_display_board if human_turn?
+    end
+  end
+
   def play_again?
     answer = nil
     loop do
@@ -225,29 +231,30 @@ class TTT_Game
     answer == 'y'
   end
 
-  def reset
+  def reset_phase
     board.reset
+    clear_display
+    display_play_again_message
+    @current_player = set_first_to_go
     clear_display
   end
 
   def set_first_to_go
     first = nil
     loop do
-      puts "Who should go first?
-      \n[1] - You go first
-      \n[2] - Computer goes first
-      \n[3] - Computer chooses who goes first"
+      puts "Who should go first?\n[1] - You go first\n[2] - Computer goes first"
 
       first = gets.chomp.to_i
-  
-      break if (1..3).include?(first)
+
+      break if [1, 2].include?(first)
       clear_display
       puts format("Invalid choice. Please choose #{joinor([1, 2, 3])}")
     end
-  
+
+    clear_display
     first == 1 ? 'Human' : 'Computer'
   end
 end
 
-game = TTT_Game.new
+game = TTTGame.new
 game.play
