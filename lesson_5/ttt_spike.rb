@@ -108,11 +108,16 @@ class Square
 end
 
 class Player
-  attr_accessor :marker, :name
+  attr_accessor :marker, :name, :score
 
   def initialize
     @name = nil
     @marker = nil
+    @score = 0
+  end
+
+  def score_point
+    @score += 1
   end
 
   def to_s
@@ -121,6 +126,8 @@ class Player
 end
 
 class TTTGame
+  WINNING_SCORE = 3
+
   attr_reader :board, :human, :computer
   attr_accessor :current_player
 
@@ -129,6 +136,7 @@ class TTTGame
     @human = Player.new
     @computer = Player.new
     @current_player = nil
+    @game = 0
   end
 
   def play
@@ -182,7 +190,8 @@ class TTTGame
   end
 
   def display_board
-    puts "#{human} is #{human.marker}. #{computer} is #{computer.marker}."
+    # puts "#{human} is #{human.marker}. #{computer} is #{computer.marker}."
+    display_scoreboard
     puts ""
     board.draw
     puts ""
@@ -206,8 +215,16 @@ class TTTGame
     end
   end
 
+  def display_scoreboard
+    buffer = " "*human.name.size
+    puts "#{human} [#{human.marker}] | #{computer} [#{computer.marker}]"
+    puts "#{buffer} #{human.score}   |      #{computer.score}"
+  end
+
   def display_welcome_message
-    puts "Welcome to TTT"
+    puts "Welcome to TicTacToe!
+      The first to #{WINNING_SCORE} games wins the match.
+      Good luck!"
     puts ""
   end
 
@@ -243,9 +260,18 @@ class TTTGame
     loop do
       display_board
       player_turn_loop
+      update_score
       display_result
       break unless play_again?
       reset_phase
+    end
+  end
+
+  def update_score
+    @game += 1
+    case board.winning_marker
+    when human.marker    then human.score_point
+    when computer.marker then computer.score_point
     end
   end
 
