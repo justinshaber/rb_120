@@ -16,16 +16,25 @@ class Board
     @squares[num].marker = marker
   end
 
-  def unmarked_keys
-    @squares.keys.select { |key| @squares[key].unmarked? }
-  end
-
   def full?
     unmarked_keys.empty?
   end
 
+  def get_third_square(marker)
+    square = nil
+    WINNING_LINES.each do |line|
+      square = find_desired_square(line, marker)
+      break if square
+    end
+    square
+  end
+
   def someone_won?
     !!winning_marker
+  end
+
+  def unmarked_keys
+    @squares.keys.select { |key| @squares[key].unmarked? }
   end
 
   def winning_marker
@@ -49,7 +58,7 @@ class Board
     puts "  #{@squares[1]}  |  #{@squares[2]}  |  #{@squares[3]}"
     puts "     |     |"
     puts "-----+-----+-----"
-    puts "     |     |"
+    puts "     |     | "
     puts "  #{@squares[4]}  |  #{@squares[5]}  |  #{@squares[6]}"
     puts "     |     |"
     puts "-----+-----+-----"
@@ -62,8 +71,20 @@ class Board
 
   private
 
+  def find_desired_square(line, marker)
+    squares = @squares.values_at(*line).collect(&:marker)
+
+    if squares.count(marker) == 2 &&
+       squares.count(Square::INITIAL_MARKER) == 1
+  
+      desired_position = squares.index(Square::INITIAL_MARKER)
+      return line[desired_position]
+    end
+    nil
+  end
+
   def three_identical_markers?(squares)
-    return nil if squares.any?(" ")
+    return nil if squares.any?(Square::INITIAL_MARKER)
     squares.uniq.size == 1
   end
 end
@@ -129,13 +150,29 @@ class TTTGame
   end
 
   def computer_moves
-    square = board.unmarked_keys.sample
+    # square = board.unmarked_keys.sample
+    # board[square] = computer.marker
+
+    square = board.get_third_square(computer.marker) # win if able
+  
+    if !square
+      square = board.get_third_square(human.marker) # prevent opponent win if able
+    end
+
+    if !square
+      square = 5 if board.unmarked_keys.include?(5) # take square 5 (most advantageous square)
+    end
+  
+    if !square 
+      square = board.unmarked_keys.sample # choose random square
+    end
+  
     board[square] = computer.marker
   end
 
   def current_player_moves
     human_turn? ? human_moves : computer_moves
-    @current_player = alternate_player(@current_player)
+    @current_player = alternate_player(current_player)
   end
 
   def display_goodbye_message
@@ -173,7 +210,7 @@ class TTTGame
   end
 
   def human_moves
-    puts "Choose a square between: (#{board.unmarked_keys.join(', ')}) "
+    puts "Choose a square between: (#{joinor(board.unmarked_keys)}) "
     square = nil
     loop do
       square = gets.chomp.to_i
