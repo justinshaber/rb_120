@@ -76,7 +76,7 @@ class Board
 
     if squares.count(marker) == 2 &&
        squares.count(Square::INITIAL_MARKER) == 1
-  
+
       desired_position = squares.index(Square::INITIAL_MARKER)
       return line[desired_position]
     end
@@ -114,6 +114,10 @@ class Player
     @name = nil
     @marker = nil
   end
+
+  def to_s
+    @name
+  end
 end
 
 class TTTGame
@@ -150,24 +154,22 @@ class TTTGame
   end
 
   def computer_moves
-    # square = board.unmarked_keys.sample
-    # board[square] = computer.marker
+    available_squares = board.unmarked_keys
+    computer_marker = computer.marker
 
-    square = board.get_third_square(computer.marker) # win if able
-  
-    if !square
-      square = board.get_third_square(human.marker) # prevent opponent win if able
-    end
+    # Win if able.
+    square = board.get_third_square(computer_marker)
 
-    if !square
-      square = 5 if board.unmarked_keys.include?(5) # take square 5 (most advantageous square)
-    end
-  
-    if !square 
-      square = board.unmarked_keys.sample # choose random square
-    end
-  
-    board[square] = computer.marker
+    # If not, then prevent opponent win.
+    square = board.get_third_square(human.marker) if !square
+
+    # If not, then take square 5 (most advantageous square).
+    (square = 5 if available_squares.include?(5)) if !square
+
+    # If not, then choose random square
+    square = available_squares.sample if !square
+
+    board[square] = computer_marker
   end
 
   def current_player_moves
@@ -180,7 +182,7 @@ class TTTGame
   end
 
   def display_board
-    puts "#{human.name} is #{human.marker}. #{computer.name} is #{computer.marker}."
+    puts "#{human} is #{human.marker}. #{computer} is #{computer.marker}."
     puts ""
     board.draw
     puts ""
@@ -278,7 +280,7 @@ class TTTGame
   def set_first_to_go
     first = nil
     loop do
-      puts "Who should go first?\n[1] - #{human.name} goes first\n[2] - #{computer.name} goes first"
+      puts "Who should go first?\n[1] - #{human}\n[2] - #{computer}"
 
       first = gets.chomp.to_i
 
