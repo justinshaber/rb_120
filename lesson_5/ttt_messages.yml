@@ -1,0 +1,12 @@
+welcome: "Welcome to TicTacToe! The first to %{options} games wins the match. Good luck!"
+go_first: "Who should go first?
+\n[1] - You go first
+\n[2] - Computer goes first"
+invalid_choice: "Invalid choice. Please choose %{options}"
+choose_square: "Choose a square %{options}"
+tie: "It's a tie"
+game_winner: "%{options} won the game!"
+match_winner: "%{options} won the match!"
+ask_play_again: "Do you want to play again? ([y] - continue, [n] - quit)"
+goodbye: "Thanks for playing Tic Tac Toe! Goodbye."
+press_enter: "Press [enter] to continue"

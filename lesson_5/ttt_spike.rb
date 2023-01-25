@@ -1,4 +1,10 @@
 require 'pry'
+require 'yaml'
+MESSAGE = YAML.load_file('ttt_messages.yml')
+
+def prompt(message, options = '')
+  puts format("=> #{MESSAGE[message]}", options: options)
+end
 
 class Board
   WINNING_LINES = [
