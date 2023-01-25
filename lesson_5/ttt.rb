@@ -268,9 +268,14 @@ class TTTGame
       player_turn_loop
       update_score
       display_result
-      break unless play_again?
+      # break unless play_again?
+      enter_to_continue unless match_winner?
       reset_phase
     end
+  end
+
+  def match_winner?
+    human.score == 3 || computer.score == 3
   end
 
   def player_turn_loop
