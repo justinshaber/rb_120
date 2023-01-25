@@ -1,4 +1,3 @@
-require 'pry'
 require 'yaml'
 MESSAGE = YAML.load_file('ttt_messages.yml')
 
@@ -146,7 +145,6 @@ class TTTGame
   end
 
   def play
-    clear_display
     welcome_phase
     main_game_phase
     display_goodbye_message
@@ -192,11 +190,10 @@ class TTTGame
   end
 
   def display_goodbye_message
-    puts "Thanks for playing! Goodbye!"
+    prompt('goodbye')
   end
 
   def display_board
-    # puts "#{human} is #{human.marker}. #{computer} is #{computer.marker}."
     display_scoreboard
     puts ""
     board.draw
@@ -204,7 +201,7 @@ class TTTGame
   end
 
   def display_play_again_message
-    puts "Let's play again!"
+    prompt('play_again')
     puts ""
   end
 
@@ -213,11 +210,11 @@ class TTTGame
 
     case board.winning_marker
     when human.marker
-      puts "#{human.name} won!"
+      prompt('game_winner', human.name)
     when computer.marker
-      puts "#{computer.name} won!"
+      prompt('game_winner', computer.name)
     else
-      puts "It's a tie!"
+      prompt('tie')
     end
   end
 
@@ -228,19 +225,22 @@ class TTTGame
   end
 
   def display_welcome_message
-    puts "Welcome to TicTacToe!
-      The first to #{WINNING_SCORE} games wins the match.
-      Good luck!"
-    puts ""
+    prompt('welcome', WINNING_SCORE)
+  end
+
+  def enter_to_continue
+    prompt('press_enter')
+    STDIN.gets
   end
 
   def human_moves
-    puts "Choose a square between: (#{joinor(board.unmarked_keys)}) "
+    square_options = joinor(board.unmarked_keys)
+    prompt('choose_square', square_options)
     square = nil
     loop do
       square = gets.chomp.to_i
       break if board.unmarked_keys.include?(square)
-      puts "Sorry, that's not a valid choice."
+      prompt('invalid_choice', square_options)
     end
 
     board[square] = human.marker
@@ -273,14 +273,6 @@ class TTTGame
     end
   end
 
-  def update_score
-    @game += 1
-    case board.winning_marker
-    when human.marker    then human.score_point
-    when computer.marker then computer.score_point
-    end
-  end
-
   def player_turn_loop
     loop do
       current_player_moves
@@ -292,10 +284,10 @@ class TTTGame
   def play_again?
     answer = nil
     loop do
-      puts "Would you like to play again? (y,n)"
+      prompt('ask_play_again')
       answer = gets.chomp.downcase
       break if %w(y n).include? answer
-      puts "Sorry, must be y or n."
+      prompt('invalid_choice', '[y] or [n]')
     end
 
     answer == 'y'
@@ -312,13 +304,13 @@ class TTTGame
   def set_first_to_go
     first = nil
     loop do
-      puts "Who should go first?\n[1] - #{human}\n[2] - #{computer}"
+      prompt('go_first', computer)
 
       first = gets.chomp.to_i
 
       break if [1, 2].include?(first)
       clear_display
-      puts format("Invalid choice. Please choose #{joinor([1, 2, 3])}")
+      prompt('invalid_choice', joinor([1, 2]))
     end
 
     clear_display
@@ -326,40 +318,53 @@ class TTTGame
   end
 
   def set_computer_marker
-    human.marker == 'X' ? 'O' : 'X'
+    "\u266B".encode('utf-8')
   end
 
   def set_computer_name
     ['John Lennon', 'George Harrison', 'Paul McCartney', 'Ringo Starr'].sample
   end
 
+  def set_player_info
+    human.name = set_human_name
+    computer.name = set_computer_name
+    human.marker = set_human_marker
+    computer.marker = set_computer_marker
+    @current_player = set_first_to_go
+  end
+
   def set_human_marker
     marker = nil
     loop do
-      puts "Choose any single character besides a space as your marker."
+      prompt('choose_marker')
 
       marker = gets.chomp
 
       break if marker.size == 1 && marker != " "
       clear_display
-      puts format("Invalid choice.")
+      prompt("invalid_choice", "any single character besides a space as your marker.")
     end
 
     marker
   end
 
   def set_human_name
-    puts "What's your name?"
+    prompt('ask_name')
     gets.chomp
   end
 
+  def update_score
+    @game += 1
+    case board.winning_marker
+    when human.marker    then human.score_point
+    when computer.marker then computer.score_point
+    end
+  end
+
   def welcome_phase
+    clear_display
     display_welcome_message
-    human.name = set_human_name
-    computer.name = set_computer_name
-    human.marker = set_human_marker
-    computer.marker = set_computer_marker
-    @current_player = set_first_to_go
+    set_player_info
   end
 end
 
