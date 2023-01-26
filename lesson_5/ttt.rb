@@ -134,7 +134,7 @@ class TTTGame
   WINNING_SCORE = 3
 
   attr_reader :board, :human, :computer
-  attr_accessor :current_player
+  attr_accessor :current_player, :game
 
   def initialize
     @board = Board.new
@@ -145,8 +145,13 @@ class TTTGame
   end
 
   def play
-    welcome_phase
-    main_game_phase
+    loop do
+      welcome_phase
+      main_game_phase
+      prompt ('match_winner')
+      break unless play_again?
+      reset_phase
+    end
     display_goodbye_message
   end
 
@@ -201,8 +206,8 @@ class TTTGame
   end
 
   def display_play_again_message
-    prompt('play_again')
-    puts ""
+    # prompt('play_again')
+    prompt('round', @game + 1)
   end
 
   def display_result
@@ -268,8 +273,8 @@ class TTTGame
       player_turn_loop
       update_score
       display_result
-      # break unless play_again?
-      enter_to_continue unless match_winner?
+      break if match_winner?
+      enter_to_continue
       reset_phase
     end
   end
@@ -301,9 +306,19 @@ class TTTGame
   def reset_phase
     board.reset
     clear_display
-    display_play_again_message
-    @current_player = set_first_to_go
+    if match_winner?
+      reset_scores
+    else
+      display_play_again_message
+      @current_player = set_first_to_go
+    end
     clear_display
+  end
+
+  def reset_scores
+    @game = 0
+    human.score = 0
+    computer.score = 0
   end
 
   def set_first_to_go
