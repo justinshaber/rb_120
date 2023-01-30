@@ -28,10 +28,10 @@ Nouns
   Player/Dealer
     Hand
       total
+      bust
+      status?
     hit
     stay
-    bust
-    total
   Deck
     Cards
     shuffle
@@ -39,7 +39,10 @@ Nouns
   Cards
   Hand
     total
+    bust
+    status?
   Game
+    play
     
 Verbs
   hit
@@ -50,22 +53,84 @@ Verbs
   bust
 =end
 
+class Participant
+  # STATES - Hand, cards, total
+  # BEHAVIOURS - hit, stay
+end
 
+class Deck
+  # STATES - cards
+  # BEHAVIOURS - shuffle, deal
+
+  attr_accessor :deck
+
+  SUITS = %w(c d h s)
+  NUM_CARDS = ("2".."10").to_a
+  FACE_CARDS = %w(J Q K A)
+  ALL_CARDS = NUM_CARDS + FACE_CARDS
+
+  def initialize
+    @deck = []
+    build_deck
+  end
+
+  def build_deck
+    SUITS.each do |suit|
+      ALL_CARDS.each do |value|
+        @deck << Card.new(value, suit)
+      end
+    end
+  end
+
+  def shuffle
+
+  end
+
+  def deal
+
+  end
+
+  def size
+    deck.size
+  end
+
+  def to_s
+   deck.each do |card|
+    puts card
+   end
+  end
+end
+
+class Card
+  SPADE = "\u2660".encode('utf-8')
+  CLUB = "\u2663".encode('utf-8')
+  HEART = "\u2665".encode('utf-8')
+  DIAMOND = "\u2666".encode('utf-8')
+  
+  attr_reader :value, :suit
+
+  def initialize(value, suit)
+    @value = value
+    @suit = suit
+  end
+
+  def to_s
+    symbol = case suit
+             when 's'  then SPADE
+             when 'c'  then CLUB
+             when 'h'  then HEART
+             when 'd'  then DIAMOND
+             end
+    "|#{@value}#{symbol}|"
+  end
+end
 
 class Game
+  attr_accessor :deck
+
   def initialize
     @deck = Deck.new
-    
   end
-
-  def play
-    start_phase
-    main_game_phase
-    show_cards
-    calculate_winner
-  end
-
-  private
 
 # refactor later
   def main_game_phase
@@ -80,6 +145,14 @@ class Game
     deal_cards
     show_cards
     game_over if dealer_blackjack?
+  end
+
+  def play
+    puts deck
+    # start_phase
+    # main_game_phase
+    # show_cards
+    # calculate_winner
   end
 end
 
