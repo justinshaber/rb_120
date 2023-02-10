@@ -53,9 +53,67 @@ Verbs
   bust
 =end
 
-class Participant
+=begin
+To do:
+  Put value of card within class
+  Card has symbol, value, suit
+=end
+
+module Hand
+  def display_cards
+    cards.map { |card| "#{card}" }.join
+  end
+
+  def display_cards_with_totals
+    puts "#{display_cards} => #{calculate_total}"
+  end
+
+  # put value of each card within it's class.
+  def calculate_total
+    non_ace_cards, aces = cards.partition { |card| card.value != "A" }
+    non_ace_values = []
+
+    non_ace_cards.each do |card|
+      non_ace_values << (Deck::NUM_CARDS.include?(card.value) ? card.value.to_i : 10)
+    end
+
+    non_ace_total = non_ace_values.sum
+
+    return add_aces(non_ace_total, aces.size) unless aces.size == 0
+
+    [non_ace_total]
+  end
+
+  def add_aces(non_ace_total, aces)
+    low_total = non_ace_total + aces
+    high_total = non_ace_total + 10 + aces
+  
+    totals = []
+    totals << low_total if low_total
+    totals << high_total if high_total <= 21
+  
+    totals
+  end
+end
+
+class Player
   # STATES - Hand, cards, total
   # BEHAVIOURS - hit, stay
+  include Hand
+  attr_accessor :cards, :total
+
+  def initialize
+    @cards = []
+    @total = []
+  end
+end
+
+class Human < Player
+
+end
+
+class Dealer < Player
+
 end
 
 class Deck
@@ -83,11 +141,11 @@ class Deck
   end
 
   def shuffle
-
+    deck.shuffle!
   end
 
-  def deal
-
+  def deal(player)
+    player.cards << deck.shift
   end
 
   def size
@@ -95,9 +153,7 @@ class Deck
   end
 
   def to_s
-   deck.each do |card|
-    puts card
-   end
+    deck.map { |card| "#{card}" }.join
   end
 end
 
@@ -126,10 +182,29 @@ class Card
 end
 
 class Game
-  attr_accessor :deck
+  attr_accessor :deck, :human, :dealer
 
   def initialize
     @deck = Deck.new
+    @human = Human.new
+    @dealer = Dealer.new
+  end
+
+  def deal_cards
+    2.times do
+      deck.deal(human)
+      deck.deal(dealer)
+    end
+  end
+
+  def show_cards
+    human.display_cards
+    dealer.display_cards
+  end
+
+  def show_cards_with_totals
+    human.display_cards_with_totals
+    dealer.display_cards_with_totals
   end
 
 # refactor later
@@ -142,14 +217,15 @@ class Game
   end
 
   def start_phase
+    deck.shuffle
     deal_cards
-    show_cards
-    game_over if dealer_blackjack?
+    # show_cards
+    show_cards_with_totals
+    # game_over if dealer_blackjack?
   end
 
   def play
-    puts deck
-    # start_phase
+    start_phase
     # main_game_phase
     # show_cards
     # calculate_winner
