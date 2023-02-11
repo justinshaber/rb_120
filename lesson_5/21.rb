@@ -57,6 +57,13 @@ Verbs
 To do:
   Put value of card within class
   Card has symbol, value, suit
+
+A6 - 1 (11) [1,6]+10
+AA6 - (1+1) (1+11) [1,1,6]+10
+AAA6 - (1+1+1+6) (1+1+6+11) [1,1,1,6]+10
+AAAA6 - (1+1+1+1) (1+1+1+11) 
+
+
 =end
 
 module Hand
@@ -163,11 +170,18 @@ class Card
   HEART = "\u2665".encode('utf-8')
   DIAMOND = "\u2666".encode('utf-8')
   
-  attr_reader :value, :suit
+  attr_reader :value, :suit, :blackjack_value
 
   def initialize(value, suit)
     @value = value
     @suit = suit
+    @blackjack_value = get_blackjack_value
+  end
+
+  def get_blackjack_value
+    return value.to_i if Deck::NUM_CARDS.include?(value)
+    return 10         if %w(J Q K).include?(value)
+    return 1          if value == "A"
   end
 
   def to_s
