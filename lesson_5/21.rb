@@ -53,27 +53,27 @@ Verbs
   bust
 =end
 
-=begin
-To do:
-  Put value of card within class
-  Card has symbol, value, suit
-
-A6 - 1 (11) [1,6]+10
-AA6 - (1+1) (1+11) [1,1,6]+10
-AAA6 - (1+1+1+6) (1+1+6+11) [1,1,1,6]+10
-AAAA6 - (1+1+1+1) (1+1+1+11) 
-
-
-=end
-
 require 'pry'
 
 module Hand
+  def blackjack?
+    low_total == 21 || high_total == 21
+  end
+
+  def bust?
+    low_total > 21
+  end
+
+  def display_cards
+    cards.map { |card| "#{card}" }.join
+  end
+
   def display_cards_with_totals
     "#{display_cards} => #{display_total}"
   end
 
   def display_total
+    return "BlackJack!" if low_total == 21 || high_total == 21
     high_total.nil? ? "#{low_total}" : "#{low_total} or #{high_total}"
   end
 
@@ -101,9 +101,6 @@ class Player
 end
 
 class Human < Player
-  def display_cards
-    cards.map { |card| "#{card}" }.join
-  end
 end
 
 class Dealer < Player
@@ -114,8 +111,8 @@ class Dealer < Player
     super
   end
 
-  def display_cards
-    hole_card ? "|**|#{cards.last}" : display_cards_with_totals
+  def display_correct_cards
+    hole_card ? "|**|#{cards.last} ==> ??" : display_cards_with_totals
   end
 end
 
@@ -210,11 +207,27 @@ class Game
   def display_table
     system 'clear'
     puts "     Dealer"
-    puts "    #{dealer.display_cards}"
+    puts "    #{dealer.display_correct_cards}"
     puts ""
     puts "    #{human.display_cards_with_totals}"
     puts "     Player"
     puts ""
+  end
+
+  def game_over
+    dealer.hole_card = false
+    display_table
+    display_goodbye_message
+  end
+
+  def display_goodbye_message
+    puts "Gameover"
+    puts "Dealer got Blackjack..."
+    if human.blackjack?
+      puts "But you also got Blackjack...it's a push!"
+    else
+      puts "You lose"
+    end
   end
 
 # refactor later
@@ -248,10 +261,7 @@ class Game
     deal_cards
     update_totals
     display_table
-    # game_over if dealer_blackjack?
-      # game_over
-        # push if player blackjack
-        # goodbye message
+    game_over if dealer.blackjack?
   end
 
   def update_totals
