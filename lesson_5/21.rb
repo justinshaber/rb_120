@@ -69,12 +69,12 @@ AAAA6 - (1+1+1+1) (1+1+1+11)
 require 'pry'
 
 module Hand
-  def display_cards
-    cards.map { |card| "#{card}" }.join
+  def display_cards_with_totals
+    "#{display_cards} => #{display_total}"
   end
 
-  def display_cards_with_totals
-    puts "#{display_cards} => #{calculate_total}"
+  def display_total
+    high_total.nil? ? "#{low_total}" : "#{low_total} or #{high_total}"
   end
 
   def calculate_total
@@ -101,11 +101,22 @@ class Player
 end
 
 class Human < Player
-
+  def display_cards
+    cards.map { |card| "#{card}" }.join
+  end
 end
 
 class Dealer < Player
+  attr_accessor :hole_card
 
+  def initialize
+    @hole_card = true
+    super
+  end
+
+  def display_cards
+    hole_card ? "|**|#{cards.last}" : display_cards_with_totals
+  end
 end
 
 class Deck
@@ -196,14 +207,14 @@ class Game
     end
   end
 
-  def show_cards
-    human.display_cards
-    dealer.display_cards
-  end
-
-  def show_cards_with_totals
-    human.display_cards_with_totals
-    dealer.display_cards_with_totals
+  def display_table
+    system 'clear'
+    puts "     Dealer"
+    puts "    #{dealer.display_cards}"
+    puts ""
+    puts "    #{human.display_cards_with_totals}"
+    puts "     Player"
+    puts ""
   end
 
 # refactor later
@@ -215,19 +226,37 @@ class Game
     game_over if bust?
   end
 
-  def start_phase
-    deck.shuffle
-    deal_cards
-    # show_cards
-    show_cards_with_totals
-    # game_over if dealer_blackjack?
-  end
-
   def play
     start_phase
     # main_game_phase
     # show_cards
     # calculate_winner
+  end
+
+  def show_cards
+    human.display_cards
+    dealer.display_cards
+  end
+
+  def show_cards_with_totals
+    human.display_cards_with_totals
+    dealer.display_cards_with_totals
+  end
+
+  def start_phase
+    deck.shuffle
+    deal_cards
+    update_totals
+    display_table
+    # game_over if dealer_blackjack?
+      # game_over
+        # push if player blackjack
+        # goodbye message
+  end
+
+  def update_totals
+    human.low_total, human.high_total = human.calculate_total
+    dealer.low_total, dealer.high_total = dealer.calculate_total
   end
 end
 
