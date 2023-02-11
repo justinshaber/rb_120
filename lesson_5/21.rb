@@ -66,6 +66,8 @@ AAAA6 - (1+1+1+1) (1+1+1+11)
 
 =end
 
+require 'pry'
+
 module Hand
   def display_cards
     cards.map { |card| "#{card}" }.join
@@ -75,31 +77,13 @@ module Hand
     puts "#{display_cards} => #{calculate_total}"
   end
 
-  # put value of each card within it's class.
   def calculate_total
-    non_ace_cards, aces = cards.partition { |card| card.value != "A" }
-    non_ace_values = []
-
-    non_ace_cards.each do |card|
-      non_ace_values << (Deck::NUM_CARDS.include?(card.value) ? card.value.to_i : 10)
-    end
-
-    non_ace_total = non_ace_values.sum
-
-    return add_aces(non_ace_total, aces.size) unless aces.size == 0
-
-    [non_ace_total]
+    total = cards.collect(&:blackjack_value).sum
+    ace_in_hand? && total < 12 ? [total, total+10] : [total]
   end
 
-  def add_aces(non_ace_total, aces)
-    low_total = non_ace_total + aces
-    high_total = non_ace_total + 10 + aces
-  
-    totals = []
-    totals << low_total if low_total
-    totals << high_total if high_total <= 21
-  
-    totals
+  def ace_in_hand?
+    cards.any? {|card| card.value == "A"}
   end
 end
 
@@ -107,11 +91,12 @@ class Player
   # STATES - Hand, cards, total
   # BEHAVIOURS - hit, stay
   include Hand
-  attr_accessor :cards, :total
+  attr_accessor :cards, :low_total, :high_total
 
   def initialize
     @cards = []
-    @total = []
+    @low_total = nil
+    @high_total = nil
   end
 end
 
