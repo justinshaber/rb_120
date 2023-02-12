@@ -54,6 +54,13 @@ Verbs
 =end
 
 require 'pry'
+require 'yaml'
+
+MESSAGE = YAML.load_file('21_messages.yml')
+
+def prompt(message)
+  puts format("=> #{MESSAGE[message]}")
+end
 
 module Hand
   def blackjack?
@@ -101,6 +108,15 @@ class Player
 end
 
 class Human < Player
+  def hit_or_stay?
+    loop do
+      prompt("hit_or_stay?")
+      answer = gets.chomp.downcase
+  
+      return answer if answer == "h" || answer == "s"
+      prompt("invalid_response")
+    end
+  end
 end
 
 class Dealer < Player
@@ -114,12 +130,13 @@ class Dealer < Player
   def display_correct_cards
     hole_card ? "|**|#{cards.last} ==> ??" : display_cards_with_totals
   end
+
+  def reveal_hole_card
+    self.hole_card = false
+  end
 end
 
 class Deck
-  # STATES - cards
-  # BEHAVIOURS - shuffle, deal
-
   attr_accessor :deck
 
   SUITS = %w(c d h s)
@@ -144,7 +161,7 @@ class Deck
     deck.shuffle!
   end
 
-  def deal(player)
+  def deal_to(player)
     player.cards << deck.shift
   end
 
@@ -199,8 +216,8 @@ class Game
 
   def deal_cards
     2.times do
-      deck.deal(human)
-      deck.deal(dealer)
+      deck.deal_to human
+      deck.deal_to dealer
     end
   end
 
@@ -214,46 +231,72 @@ class Game
     puts ""
   end
 
-  def game_over
-    dealer.hole_card = false
-    display_table
-    display_goodbye_message
-  end
-
   def display_goodbye_message
     puts "Gameover"
-    puts "Dealer got Blackjack..."
-    if human.blackjack?
-      puts "But you also got Blackjack...it's a push!"
+    if dealer.blackjack?
+      human.blackjack? ? prompt("push") : prompt("dealer_blackjack")
+    elsif human.bust?
+      prompt("player_busted")
+    elsif dealer.bust?
+      prompt("dealer_busted")
     else
-      puts "You lose"
+      puts "somebody won"
     end
+  end
+
+  def game_over
+    dealer.reveal_hole_card
+    display_table
+    display_goodbye_message
   end
 
 # refactor later
   def main_game_phase
     player_turn
-    game_over if bust?
+    game_over if human.bust?
 
     dealer_turn
-    game_over if bust?
+    game_over if dealer.bust?
+  end
+
+  def player_turn
+    loop do
+      break if human.blackjack?
+  
+      choice = human.hit_or_stay?
+      if choice == 'h'
+        deck.deal_to human
+        human.low_total, human.high_total = human.calculate_total
+        display_table
+      end
+      break if choice == 's' || human.bust?
+    end
+  end
+
+  def dealer_turn
+    dealer.reveal_hole_card
+    display_table
+    sleep 1
+    loop do
+      break if dealer.blackjack?
+      break if dealer.low_total >= 17
+      if dealer.high_total
+        break if dealer.high_total >= 18
+      end
+  
+      deck.deal_to dealer
+      dealer.low_total, dealer.high_total = dealer.calculate_total
+      display_table
+      sleep 1
+    end
   end
 
   def play
     start_phase
-    # main_game_phase
-    # show_cards
+    main_game_phase
+    display_table
+    display_goodbye_message
     # calculate_winner
-  end
-
-  def show_cards
-    human.display_cards
-    dealer.display_cards
-  end
-
-  def show_cards_with_totals
-    human.display_cards_with_totals
-    dealer.display_cards_with_totals
   end
 
   def start_phase
