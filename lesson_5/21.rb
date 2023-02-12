@@ -1,56 +1,28 @@
 =begin
-Overview:
-  Blackjack is a card game that has between 1-7 players trying get a higher total than the dealer, without exceeding 21
-Equipment used
-  DECK: 1-8 52 card decks are used.
-  CARDS 2-10 score the indicated value; Face cards score 10 points; Aces can be scored as 1 or 11.
-Game play
-  All players are dealt 2 cards, dealer has only one card showing.
-  If the dealer has 21
-    players who also have 21 tie
-    all other players lose
-  PLAYER TURN
-    HIT - Recieve another card from the deck
-    STAY - do not recieve another card, end their turn
-    A player may hit as many times as they want, given they do not exceed 21.
-  DEALER TURN
-    The dealer hits as long as their soft total is 17 or below.
-Winning
-  When the dealer his a valid hand, totals are compared.
-    Players win if they have a higher total
-    Players lose if they have a lower total
-    Players tie if they push (have an total equal to the dealer)
-=end
+  TODO
 
-=begin
-Make an initial guess at organizing the verbs into nouns
-Nouns
-  Player/Dealer
-    Hand
-      total
-      bust
-      status?
-    hit
-    stay
-  Deck
-    Cards
-    shuffle
-    deal
-  Cards
-  Hand
-    total
-    bust
-    status?
-  Game
-    play
-    
-Verbs
-  hit
-  stay
-  deal
-  shuffle
-  Total
-  bust
+  After initial deal
+    Indicate if player wins with blackjack
+    Indicate if it's a push with both players having blackjack
+    Indicate if dealer wins with blackjack
+  Refactor
+    Game.update_totals
+  Cleanup
+    main_game_phase
+    player_turn
+    dealer_turn
+    calculate_winner
+  fix game_over just toggling hole card
+  who deals the cards and how?
+
+  # //lose - dealer bj / human no bj             'dealer_blackjack'
+  # //tie - dealer bj / human bj                 'both_blackjack'
+  # win - dealer no bj / human bj                'human_blackjack'
+  # // lose - human busts                        'human_busted'
+  # // win - dealer busts / human doesn't bust   'dealer_busted'
+  # // win - human total > dealer total          'human_wins_high'
+  # // lose - dealer total > human total         'dealer_wins_high'
+  # // tie - human total = dealer                'push'
 =end
 
 require 'pry'
@@ -95,8 +67,6 @@ module Hand
 end
 
 class Player
-  # STATES - Hand, cards, total
-  # BEHAVIOURS - hit, stay
   include Hand
   attr_accessor :cards, :low_total, :high_total
 
@@ -206,12 +176,13 @@ class Card
 end
 
 class Game
-  attr_accessor :deck, :human, :dealer
+  attr_accessor :deck, :human, :dealer, :winner
 
   def initialize
     @deck = Deck.new
     @human = Human.new
     @dealer = Dealer.new
+    @winner = ""
   end
 
   def deal_cards
@@ -232,31 +203,30 @@ class Game
   end
 
   def display_goodbye_message
-    puts "Gameover"
-    if dealer.blackjack?
-      human.blackjack? ? prompt("push") : prompt("dealer_blackjack")
-    elsif human.bust?
-      prompt("player_busted")
-    elsif dealer.bust?
-      prompt("dealer_busted")
-    else
-      puts "somebody won"
-    end
+    prompt(self.winner)
   end
 
   def game_over
     dealer.reveal_hole_card
-    display_table
-    display_goodbye_message
   end
 
-# refactor later
+  # refactor
   def main_game_phase
     player_turn
-    game_over if human.bust?
+    if human.bust?
+      self.winner = 'human_busted'
+      game_over
+      return
+    end
 
     dealer_turn
-    game_over if dealer.bust?
+    if dealer.bust?
+      self.winner = 'dealer_busted'
+      game_over
+      return
+    end
+
+    calculate_winner
   end
 
   def player_turn
@@ -291,12 +261,24 @@ class Game
     end
   end
 
+  def calculate_winner
+    human_score = [human.low_total, human.high_total].select {|total| !total.nil? && total <= 21}.max
+    dealer_score = [dealer.low_total, dealer.high_total].select {|total| !total.nil? && total <= 21}.max
+    
+    if human_score > dealer_score
+      self.winner = 'human_wins_high'
+    elsif human_score < dealer_score
+      self.winner = 'dealer_wins_high'
+    else
+      self.winner = 'push'
+    end
+  end
+
   def play
     start_phase
-    main_game_phase
+    main_game_phase if self.winner.empty?
     display_table
     display_goodbye_message
-    # calculate_winner
   end
 
   def start_phase
@@ -304,9 +286,14 @@ class Game
     deal_cards
     update_totals
     display_table
-    game_over if dealer.blackjack?
+
+    if dealer.blackjack?
+      self.winner = (human.blackjack? ? 'both_blackjack' : 'dealer_blackjack')
+      game_over
+    end
   end
 
+  # refactor
   def update_totals
     human.low_total, human.high_total = human.calculate_total
     dealer.low_total, dealer.high_total = dealer.calculate_total
@@ -315,3 +302,58 @@ end
 
 game = Game.new
 game.play
+
+=begin
+Overview:
+  Blackjack is a card game that has between 1-7 players trying get a higher total than the dealer, without exceeding 21
+Equipment used
+  DECK: 1-8 52 card decks are used.
+  CARDS 2-10 score the indicated value; Face cards score 10 points; Aces can be scored as 1 or 11.
+Game play
+  All players are dealt 2 cards, dealer has only one card showing.
+  If the dealer has 21
+    players who also have 21 tie
+    all other players lose
+  PLAYER TURN
+    HIT - Recieve another card from the deck
+    STAY - do not recieve another card, end their turn
+    A player may hit as many times as they want, given they do not exceed 21.
+  DEALER TURN
+    The dealer hits as long as their soft total is 17 or below.
+Winning
+  When the dealer his a valid hand, totals are compared.
+    Players win if they have a higher total
+    Players lose if they have a lower total
+    Players tie if they push (have an total equal to the dealer)
+=end
+
+=begin
+Make an initial guess at organizing the verbs into nouns
+Nouns
+  Player/Dealer
+    Hand
+      total
+      bust
+      status?
+    hit
+    stay
+  Deck
+    Cards
+    shuffle
+    deal
+  Cards
+  Hand
+    total
+    bust
+    status?
+  Game
+    play
+    
+Verbs
+  hit
+  stay
+  deal
+  shuffle
+  Total
+  bust
+=end
