@@ -2,18 +2,15 @@
   TODO
 
   After initial deal
-    Indicate if player wins with blackjack
-    Indicate if it's a push with both players having blackjack
-    Indicate if dealer wins with blackjack
+    Only show soft high total if 18 and over
   Refactor
-    Game.update_totals
-  Cleanup
-    main_game_phase
-    player_turn
-    dealer_turn
-    calculate_winner
-  fix game_over just toggling hole card
-  who deals the cards and how?
+    Game.update_totals?
+  Welcome Messages
+  Goodbye Messages
+  Play Again
+  
+  EXTRA
+    Animate initial deal?
 
   # //lose - dealer bj / human no bj             'dealer_blackjack'
   # //tie - dealer bj / human bj                 'both_blackjack'
@@ -36,11 +33,11 @@ end
 
 module Hand
   def blackjack?
-    low_total == 21 || high_total == 21
+    hard_total == 21 || soft_total == 21
   end
 
   def bust?
-    low_total > 21
+    hard_total > 21
   end
 
   def display_cards
@@ -52,8 +49,12 @@ module Hand
   end
 
   def display_total
-    return "BlackJack!" if low_total == 21 || high_total == 21
-    high_total.nil? ? "#{low_total}" : "#{low_total} or #{high_total}"
+    return "BlackJack!" if blackjack?
+    soft_total.nil? ? "#{hard_total}" : "#{hard_total} or #{soft_total}"
+  end
+
+  def get_valid_high_score
+    [hard_total, soft_total].select {|total| !total.nil? && total <= 21}.max
   end
 
   def calculate_total
@@ -61,19 +62,41 @@ module Hand
     ace_in_hand? && total < 12 ? [total, total+10] : [total]
   end
 
+  def update_totals
+    self.hard_total, self.soft_total = calculate_total
+  end
+
   def ace_in_hand?
     cards.any? {|card| card.value == "A"}
+  end
+
+  def <=>(other)
+    a = get_valid_high_score
+    b = other.get_valid_high_score
+
+    return wins_high if a > b
+    return other.wins_high if a < b
+    return both_blackjack if a == 21 && b == 21
+    return push if a == b
   end
 end
 
 class Player
   include Hand
-  attr_accessor :cards, :low_total, :high_total
+  attr_accessor :cards, :hard_total, :soft_total
 
   def initialize
     @cards = []
-    @low_total = nil
-    @high_total = nil
+    @hard_total = nil
+    @soft_total = nil
+  end
+
+  def both_blackjack
+    'both_blackjack'
+  end
+
+  def push
+    'push'
   end
 end
 
@@ -87,6 +110,18 @@ class Human < Player
       prompt("invalid_response")
     end
   end
+
+  def wins_high
+    blackjack? ? blackjack : 'human_wins_high'
+  end
+
+  def blackjack
+    'human_blackjack'
+  end
+
+  def busted
+    'human_busted'
+  end
 end
 
 class Dealer < Player
@@ -98,11 +133,31 @@ class Dealer < Player
   end
 
   def display_correct_cards
-    hole_card ? "|**|#{cards.last} ==> ??" : display_cards_with_totals
+    hole_card ? display_with_hole_card : display_cards_with_totals
+  end
+
+  def display_with_hole_card
+    "|**|#{cards.last} ==> ??"
+  end
+
+  def hard_17_or_soft_18
+    hard_total >= 17 || (soft_total && soft_total >= 18)
   end
 
   def reveal_hole_card
     self.hole_card = false
+  end
+
+  def wins_high
+    blackjack? ? blackjack : 'dealer_wins_high'
+  end
+
+  def blackjack
+    'dealer_blackjack'
+  end
+
+  def busted
+    'dealer_busted'
   end
 end
 
@@ -176,16 +231,17 @@ class Card
 end
 
 class Game
-  attr_accessor :deck, :human, :dealer, :winner
+  attr_accessor :deck, :human, :dealer, :winner, :current_player
 
   def initialize
     @deck = Deck.new
     @human = Human.new
     @dealer = Dealer.new
     @winner = ""
+    @current_player = human
   end
 
-  def deal_cards
+  def initial_deal
     2.times do
       deck.deal_to human
       deck.deal_to dealer
@@ -203,30 +259,30 @@ class Game
   end
 
   def display_goodbye_message
-    prompt(self.winner)
+    prompt(winner)
   end
 
-  def game_over
-    dealer.reveal_hole_card
-  end
-
-  # refactor
   def main_game_phase
-    player_turn
-    if human.bust?
-      self.winner = 'human_busted'
-      game_over
-      return
-    end
-
-    dealer_turn
-    if dealer.bust?
-      self.winner = 'dealer_busted'
-      game_over
-      return
+    2.times do
+      current_player_turn
+      if current_player.bust?
+        self.winner = current_player.busted
+        return
+      end
+      self.current_player = dealer
     end
 
     calculate_winner
+  end
+
+  def current_player_turn
+    current_player == human ? player_turn : dealer_turn
+  end
+
+  def hit
+    deck.deal_to current_player
+    current_player.update_totals
+    display_table
   end
 
   def player_turn
@@ -234,11 +290,7 @@ class Game
       break if human.blackjack?
   
       choice = human.hit_or_stay?
-      if choice == 'h'
-        deck.deal_to human
-        human.low_total, human.high_total = human.calculate_total
-        display_table
-      end
+      hit if choice == 'h'
       break if choice == 's' || human.bust?
     end
   end
@@ -248,55 +300,39 @@ class Game
     display_table
     sleep 1
     loop do
-      break if dealer.blackjack?
-      break if dealer.low_total >= 17
-      if dealer.high_total
-        break if dealer.high_total >= 18
-      end
-  
-      deck.deal_to dealer
-      dealer.low_total, dealer.high_total = dealer.calculate_total
-      display_table
+      break if dealer.hard_17_or_soft_18
+      hit
       sleep 1
     end
   end
 
   def calculate_winner
-    human_score = [human.low_total, human.high_total].select {|total| !total.nil? && total <= 21}.max
-    dealer_score = [dealer.low_total, dealer.high_total].select {|total| !total.nil? && total <= 21}.max
-    
-    if human_score > dealer_score
-      self.winner = 'human_wins_high'
-    elsif human_score < dealer_score
-      self.winner = 'dealer_wins_high'
-    else
-      self.winner = 'push'
-    end
+    self.winner = human <=> dealer
   end
 
   def play
     start_phase
-    main_game_phase if self.winner.empty?
+    main_game_phase if winner.empty?
     display_table
     display_goodbye_message
   end
 
   def start_phase
     deck.shuffle
-    deal_cards
+    initial_deal
     update_totals
     display_table
 
     if dealer.blackjack?
-      self.winner = (human.blackjack? ? 'both_blackjack' : 'dealer_blackjack')
-      game_over
+      self.winner = (human.blackjack? ? both_blackjack : dealer.blackjack)
+      dealer.reveal_hole_card
     end
   end
 
   # refactor
   def update_totals
-    human.low_total, human.high_total = human.calculate_total
-    dealer.low_total, dealer.high_total = dealer.calculate_total
+    human.update_totals
+    dealer.update_totals
   end
 end
 
