@@ -1,28 +1,3 @@
-=begin
-  TODO
-
-  After initial deal
-    Only show soft high total if 18 and over
-  Refactor
-    Game.update_totals?
-  Welcome Messages
-  Goodbye Messages
-  Play Again
-  
-  EXTRA
-    Animate initial deal?
-
-  # //lose - dealer bj / human no bj             'dealer_blackjack'
-  # //tie - dealer bj / human bj                 'both_blackjack'
-  # win - dealer no bj / human bj                'human_blackjack'
-  # // lose - human busts                        'human_busted'
-  # // win - dealer busts / human doesn't bust   'dealer_busted'
-  # // win - human total > dealer total          'human_wins_high'
-  # // lose - dealer total > human total         'dealer_wins_high'
-  # // tie - human total = dealer                'push'
-=end
-
-require 'pry'
 require 'yaml'
 
 MESSAGE = YAML.load_file('21_messages.yml')
@@ -41,7 +16,7 @@ module Hand
   end
 
   def display_cards
-    cards.map { |card| "#{card}" }.join
+    cards.map(&:to_s).join
   end
 
   def display_cards_with_totals
@@ -50,16 +25,17 @@ module Hand
 
   def display_total
     return "BlackJack!" if blackjack?
-    soft_total.nil? ? "#{hard_total}" : "#{hard_total} or #{soft_total}"
+    return hard_total.to_s if soft_total.nil?
+    display_final_total ? soft_total.to_s : "#{hard_total} or #{soft_total}"
   end
 
-  def get_valid_high_score
-    [hard_total, soft_total].select {|total| !total.nil? && total <= 21}.max
+  def valid_high_score
+    [hard_total, soft_total].select { |total| !total.nil? && total <= 21 }.max
   end
 
   def calculate_total
     total = cards.collect(&:blackjack_value).sum
-    ace_in_hand? && total < 12 ? [total, total+10] : [total]
+    ace_in_hand? && total < 12 ? [total, total + 10] : [total]
   end
 
   def update_totals
@@ -67,12 +43,12 @@ module Hand
   end
 
   def ace_in_hand?
-    cards.any? {|card| card.value == "A"}
+    cards.any? { |card| card.value == "A" }
   end
 
   def <=>(other)
-    a = get_valid_high_score
-    b = other.get_valid_high_score
+    a = valid_high_score
+    b = other.valid_high_score
 
     return wins_high if a > b
     return other.wins_high if a < b
@@ -83,12 +59,13 @@ end
 
 class Player
   include Hand
-  attr_accessor :cards, :hard_total, :soft_total
+  attr_accessor :cards, :hard_total, :soft_total, :display_final_total
 
   def initialize
     @cards = []
     @hard_total = nil
     @soft_total = nil
+    @display_final_total = false
   end
 
   def both_blackjack
@@ -105,14 +82,10 @@ class Human < Player
     loop do
       prompt("hit_or_stay?")
       answer = gets.chomp.downcase
-  
+
       return answer if answer == "h" || answer == "s"
       prompt("invalid_response")
     end
-  end
-
-  def wins_high
-    blackjack? ? blackjack : 'human_wins_high'
   end
 
   def blackjack
@@ -121,6 +94,10 @@ class Human < Player
 
   def busted
     'human_busted'
+  end
+
+  def wins_high
+    blackjack? ? blackjack : 'human_wins_high'
   end
 end
 
@@ -148,16 +125,16 @@ class Dealer < Player
     self.hole_card = false
   end
 
-  def wins_high
-    blackjack? ? blackjack : 'dealer_wins_high'
-  end
-
   def blackjack
     'dealer_blackjack'
   end
 
   def busted
     'dealer_busted'
+  end
+
+  def wins_high
+    blackjack? ? blackjack : 'dealer_wins_high'
   end
 end
 
@@ -189,14 +166,6 @@ class Deck
   def deal_to(player)
     player.cards << deck.shift
   end
-
-  def size
-    deck.size
-  end
-
-  def to_s
-    deck.map { |card| "#{card}" }.join
-  end
 end
 
 class Card
@@ -204,16 +173,16 @@ class Card
   CLUB = "\u2663".encode('utf-8')
   HEART = "\u2665".encode('utf-8')
   DIAMOND = "\u2666".encode('utf-8')
-  
+
   attr_reader :value, :suit, :blackjack_value
 
   def initialize(value, suit)
     @value = value
     @suit = suit
-    @blackjack_value = get_blackjack_value
+    @blackjack_value = calculate_blackjack_value
   end
 
-  def get_blackjack_value
+  def calculate_blackjack_value
     return value.to_i if Deck::NUM_CARDS.include?(value)
     return 10         if %w(J Q K).include?(value)
     return 1          if value == "A"
@@ -230,8 +199,51 @@ class Card
   end
 end
 
+module Displays
+  def clear_display
+    system 'clear'
+  end
+
+  def display_welcome_message
+    clear_display
+    prompt('welcome')
+  end
+
+  def display_table
+    clear_display
+    puts "     Dealer"
+    puts "    #{dealer.display_correct_cards}"
+    puts ""
+    puts "    #{human.display_cards_with_totals}"
+    puts "     Player"
+    puts ""
+  end
+
+  def display_winning_message
+    prompt(winner)
+  end
+
+  def display_goodbye_message
+    prompt('thank_you')
+  end
+
+  def display_results
+    human.display_final_total = true
+    dealer.display_final_total = true
+    display_table
+    display_winning_message
+  end
+
+  def enter_to_continue
+    prompt('press_enter')
+    STDIN.gets
+  end
+end
+
 class Game
-  attr_accessor :deck, :human, :dealer, :winner, :current_player
+  include Displays
+  attr_reader :deck, :human, :dealer
+  attr_accessor :winner, :current_player
 
   def initialize
     @deck = Deck.new
@@ -241,25 +253,31 @@ class Game
     @current_player = human
   end
 
-  def initial_deal
-    2.times do
-      deck.deal_to human
-      deck.deal_to dealer
+  def play
+    display_welcome_message
+    enter_to_continue
+    loop do
+      start_phase
+      main_game_phase if winner.empty?
+      display_results
+      break unless play_again?
+      reset_game
     end
+    display_goodbye_message
   end
 
-  def display_table
-    system 'clear'
-    puts "     Dealer"
-    puts "    #{dealer.display_correct_cards}"
-    puts ""
-    puts "    #{human.display_cards_with_totals}"
-    puts "     Player"
-    puts ""
-  end
+  private
 
-  def display_goodbye_message
-    prompt(winner)
+  def start_phase
+    deck.shuffle
+    initial_deal
+    update_player_totals
+    display_table
+
+    return unless dealer.blackjack?
+
+    self.winner = (human.blackjack? ? both_blackjack : dealer.blackjack)
+    dealer.reveal_hole_card
   end
 
   def main_game_phase
@@ -275,20 +293,26 @@ class Game
     calculate_winner
   end
 
-  def current_player_turn
-    current_player == human ? player_turn : dealer_turn
+  def initial_deal
+    2.times do
+      deck.deal_to human
+      deck.deal_to dealer
+    end
   end
 
-  def hit
-    deck.deal_to current_player
-    current_player.update_totals
-    display_table
+  def update_player_totals
+    human.update_totals
+    dealer.update_totals
+  end
+
+  def current_player_turn
+    current_player == human ? player_turn : dealer_turn
   end
 
   def player_turn
     loop do
       break if human.blackjack?
-  
+
       choice = human.hit_or_stay?
       hit if choice == 'h'
       break if choice == 's' || human.bust?
@@ -306,90 +330,32 @@ class Game
     end
   end
 
+  def hit
+    deck.deal_to current_player
+    current_player.update_totals
+    display_table
+  end
+
   def calculate_winner
     self.winner = human <=> dealer
   end
 
-  def play
-    start_phase
-    main_game_phase if winner.empty?
-    display_table
-    display_goodbye_message
-  end
+  def play_again?
+    loop do
+      prompt('ask_play_again')
+      answer = gets.chomp
 
-  def start_phase
-    deck.shuffle
-    initial_deal
-    update_totals
-    display_table
+      return true if answer.downcase == 'y'
+      return false if answer.downcase == 'n'
 
-    if dealer.blackjack?
-      self.winner = (human.blackjack? ? both_blackjack : dealer.blackjack)
-      dealer.reveal_hole_card
+      prompt('invalid_quit')
     end
   end
 
-  # refactor
-  def update_totals
-    human.update_totals
-    dealer.update_totals
+  def reset_game
+    initialize
   end
 end
 
 game = Game.new
 game.play
-
-=begin
-Overview:
-  Blackjack is a card game that has between 1-7 players trying get a higher total than the dealer, without exceeding 21
-Equipment used
-  DECK: 1-8 52 card decks are used.
-  CARDS 2-10 score the indicated value; Face cards score 10 points; Aces can be scored as 1 or 11.
-Game play
-  All players are dealt 2 cards, dealer has only one card showing.
-  If the dealer has 21
-    players who also have 21 tie
-    all other players lose
-  PLAYER TURN
-    HIT - Recieve another card from the deck
-    STAY - do not recieve another card, end their turn
-    A player may hit as many times as they want, given they do not exceed 21.
-  DEALER TURN
-    The dealer hits as long as their soft total is 17 or below.
-Winning
-  When the dealer his a valid hand, totals are compared.
-    Players win if they have a higher total
-    Players lose if they have a lower total
-    Players tie if they push (have an total equal to the dealer)
-=end
-
-=begin
-Make an initial guess at organizing the verbs into nouns
-Nouns
-  Player/Dealer
-    Hand
-      total
-      bust
-      status?
-    hit
-    stay
-  Deck
-    Cards
-    shuffle
-    deal
-  Cards
-  Hand
-    total
-    bust
-    status?
-  Game
-    play
-    
-Verbs
-  hit
-  stay
-  deal
-  shuffle
-  Total
-  bust
-=end
