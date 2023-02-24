@@ -66,13 +66,14 @@ end
 
 class Player
   include Hand
-  attr_accessor :cards, :hard_total, :soft_total, :display_final_total
+  attr_accessor :cards, :hard_total, :soft_total, :display_final_total, :hand_result
 
   def initialize
     @cards = []
     @hard_total = nil
     @soft_total = nil
     @display_final_total = false
+    @hand_result = nil
   end
 
   def both_blackjack
