@@ -1,3 +1,10 @@
+=begin
+change <=>
+determine winner - not clear
+  - self.winner = # pass the human or dealer object
+    - have an object instance variable that shows the outcome
+=end
+
 require 'yaml'
 
 MESSAGE = YAML.load_file('21_messages.yml')
@@ -46,7 +53,7 @@ module Hand
     cards.any? { |card| card.value == "A" }
   end
 
-  def <=>(other)
+  def compare_to(other)
     a = valid_high_score
     b = other.valid_high_score
 
@@ -337,7 +344,7 @@ class Game
   end
 
   def calculate_winner
-    self.winner = human <=> dealer
+    self.winner = human.compare_to(dealer)
   end
 
   def play_again?
